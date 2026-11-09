@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Segredo do Bandido</title>
+</head>
+<body>
+  <h1>Segredo do Bandido</h1>
+  <p>API: <strong id="status">verificando...</strong></p>
+  <script>
+    const API_URL = "http://localhost:8000";
+    fetch(API_URL + "/health")
+      .then(r => r.json())
+      .then(d => document.getElementById("status").textContent = d.status)
+      .catch(() => document.getElementById("status").textContent = "fora do ar");
+  </script>
+</body>
+</html>

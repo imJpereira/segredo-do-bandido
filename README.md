@@ -26,10 +26,37 @@ Trabalho da disciplina Computação Distribuída (CCOM6N).
 ## Estrutura
 
 ```
-api/        FastAPI, engine do jogo e mensageria
-hardware/   controlador GPIO da bomba (processo separado)
-frontend/   interface web estática
+api/        FastAPI, engine do jogo e mensageria (SQLite fica aqui, fora do git)
+hardware/   controlador GPIO da bomba (processo separado, não importa api/)
+frontend/   interface web estática, servida à parte (consome a API)
 seed/       perguntas de exemplo
+scripts/    scripts utilitários
+deploy/     arquivos de deploy da Raspberry
 tests/      testes
-data/       banco SQLite gerado em execução (fora do git)
+docs/       documentação (contrato de eventos em docs/events.md)
 ```
+
+## Rodar localmente (sem Raspberry)
+
+Requer Python 3.10+.
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+uvicorn api.main:app --reload --env-file .env
+```
+
+A API é só REST/WebSocket (não serve HTML). Em outro terminal, sirva o frontend:
+
+```bash
+python3 -m http.server 5500 --directory frontend
+```
+
+Abra http://localhost:5500: a página de teste mostra `API: ok`.
+
+O controlador da bomba (`hardware/`) é um processo separado e só roda na Raspberry; a API e o frontend rodam sem ele.
+
+## Fluxo de trabalho
+
+Uma branch por issue (nome gerado pelo Linear) e pull request para a `main` com pelo menos 1 revisão.
