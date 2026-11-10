@@ -1,8 +1,19 @@
+from contextlib import asynccontextmanager
 import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.db import init_db
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(title="Segredo do Bandido", lifespan=lifespan)
 import api.config  # noqa: F401
 
 app = FastAPI(title="Segredo do Bandido")
