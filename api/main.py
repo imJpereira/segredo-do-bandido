@@ -3,6 +3,8 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+import api.config  # noqa: F401
+
 app = FastAPI(title="Segredo do Bandido")
 
 # Frontend roda em outra origem (servidor estático próprio), então a API libera CORS.
