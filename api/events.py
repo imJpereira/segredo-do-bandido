@@ -23,7 +23,9 @@ _exchange = None
 
 async def setup():
     global _connection, _exchange
-    _connection = await aio_pika.connect_robust(os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"))
+    _connection = await aio_pika.connect_robust(
+        os.getenv("RABBITMQ_URL", "amqp://segredo:bandido123@localhost:5672/")
+    )
     channel = await _connection.channel()
     _exchange = await channel.declare_exchange(EXCHANGE, aio_pika.ExchangeType.FANOUT, durable=False)
     queue = await channel.declare_queue(QUEUE, durable=False, arguments={"x-max-length": QUEUE_MAX_LENGTH})

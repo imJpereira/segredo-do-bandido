@@ -1,10 +1,10 @@
-# Segredo do Bandido
+
 
 Jogo cooperativo de perguntas em tempo real. A turma entra em uma sala pelo navegador do celular, vota nas respostas e a opção mais votada vira a resposta da equipe. Uma Raspberry Pi com LEDs e buzzer faz o papel de bomba: se a equipe errar demais, o tempo acaba e a bomba "explode".
 
 Trabalho da disciplina Computação Distribuída (CCOM6N).
 
-## Como funciona
+
 
 - Cada partida tem 3 perguntas sorteadas do banco, com 4 opções cada.
 - Todos os jogadores da sala votam. A opção mais votada é a resposta; empate é decidido por sorteio.
@@ -12,7 +12,7 @@ Trabalho da disciplina Computação Distribuída (CCOM6N).
 - Vitória: 3 acertos dentro do tempo. Derrota: o tempo chega a zero.
 - Nenhum endpoint ou evento revela a opção correta.
 
-## Stack
+
 
 | Camada | Tecnologia |
 | -- | -- |
@@ -23,7 +23,7 @@ Trabalho da disciplina Computação Distribuída (CCOM6N).
 | Frontend | HTML, CSS e JavaScript puro, sem framework |
 | Hardware | Raspberry Pi, `gpiozero`, 3 LEDs verdes, 1 LED vermelho e 1 buzzer |
 
-## Estrutura
+
 
 ```
 api/        FastAPI, engine do jogo e mensageria (SQLite fica aqui, fora do git)
@@ -35,21 +35,19 @@ deploy/     arquivos de deploy da Raspberry
 docs/       documentação (contrato de eventos em docs/events.md)
 ```
 
-## Rodar localmente (sem Raspberry)
 
-### Com Docker (API + RabbitMQ)
 
 ```bash
 docker compose up -d --build
 ```
 
-A API sobe em http://localhost:8000 e o painel do RabbitMQ em http://localhost:15672 (guest/guest). O SQLite fica no volume `api-data`. Um `.env` na raiz é opcional. Para parar:
+A API sobe em http://localhost:8000 e o painel do RabbitMQ em http://localhost:15672 (`segredo` / `bandido123`, ou os valores definidos em `RABBITMQ_USER` e `RABBITMQ_PASS` no `.env`). O SQLite fica no volume `api-data`. Um `.env` na raiz é opcional. Para parar:
 
 ```bash
 docker compose down
 ```
 
-### Sem Docker
+
 
 Requer Python 3.10+.
 
@@ -70,6 +68,20 @@ Abra http://localhost:5500: a página de teste mostra `API: ok`.
 
 O controlador da bomba (`hardware/`) é um processo separado e só roda na Raspberry; a API e o frontend rodam sem ele.
 
-## Fluxo de trabalho
+
+
+- **Modelo:** Raspberry Pi 4 Model B Rev 1.5 (aarch64, Debian 13 Trixie, 8 GB de RAM — `7819 MiB` totais)
+- **RabbitMQ:** roda via Docker Compose (`rabbitmq:3-management`) com `restart: unless-stopped` e serviço `docker` habilitado no boot (`systemctl enable docker`).
+- **Consumo de memória com RabbitMQ ocioso:**
+  - Processo `beam.smp` (RabbitMQ 3.13.7): **~150 MiB RSS** (`153.288 KB`)
+  - Uso total do sistema (SO + Docker + RabbitMQ ocioso): **621 MiB** usados de **7.819 MiB** (**~7,2 GiB** livres/disponíveis)
+
+
+
+```bash
+.venv/bin/python scripts/test_rabbitmq.py
+```
+
+
 
 Uma branch por issue (nome gerado pelo Linear) e pull request para a `main` com pelo menos 1 revisão.
