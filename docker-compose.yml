@@ -1,9 +1,15 @@
 services:
   rabbitmq:
     image: rabbitmq:3-management
+    restart: unless-stopped #pra reiniciar o container caso ele caia
     ports:
       - "5672:5672"
       - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-segredo}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-bandido123}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
       test: rabbitmq-diagnostics -q check_port_connectivity
       interval: 5s
@@ -12,13 +18,14 @@ services:
 
   api:
     build: .
+    restart: unless-stopped
     ports:
       - "8000:8000"
     env_file:
       - path: .env
         required: false
     environment:
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-segredo}:${RABBITMQ_PASS:-bandido123}@rabbitmq:5672/
       DB_PATH: /data/segredo.db
     volumes:
       - api-data:/data
@@ -27,4 +34,5 @@ services:
         condition: service_healthy
 
 volumes:
+  rabbitmq-data:
   api-data:
