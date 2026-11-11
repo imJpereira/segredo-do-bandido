@@ -32,11 +32,24 @@ frontend/   interface web estática, servida à parte (consome a API)
 seed/       perguntas de exemplo
 scripts/    scripts utilitários
 deploy/     arquivos de deploy da Raspberry
-tests/      testes
 docs/       documentação (contrato de eventos em docs/events.md)
 ```
 
 ## Rodar localmente (sem Raspberry)
+
+### Com Docker (API + RabbitMQ)
+
+```bash
+docker compose up -d --build
+```
+
+A API sobe em http://localhost:8000 e o painel do RabbitMQ em http://localhost:15672 (guest/guest). O SQLite fica no volume `api-data`. Um `.env` na raiz é opcional. Para parar:
+
+```bash
+docker compose down
+```
+
+### Sem Docker
 
 Requer Python 3.10+.
 
