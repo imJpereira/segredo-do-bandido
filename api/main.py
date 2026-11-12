@@ -3,11 +3,11 @@ import os
 import secrets
 import sqlite3
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-import api.config  # noqa: F401
+import api.config
 from api import events
 from api.db import get_connection, init_db
 
@@ -40,6 +40,13 @@ class QuestionIn(BaseModel):
     options: list[OptionIn] = []
 
 
+def require_admin(x_admin_password: str | None = Header(default=None)) -> None:
+    if not x_admin_password or not secrets.compare_digest(
+        x_admin_password, api.config.ADMIN_PASSWORD
+    ):
+        raise HTTPException(status_code=401, detail="Não autorizado.")
+
+
 def validate_question(payload: QuestionIn) -> str:
     text = payload.text.strip()
     if not text:
@@ -58,7 +65,7 @@ def health():
     return {"status": "ok"}
 
 
-@app.post("/questions", status_code=201)
+@app.post("/questions", status_code=201, dependencies=[Depends(require_admin)])
 def create_question(payload: QuestionIn):
     text = validate_question(payload)
 
@@ -119,7 +126,7 @@ def get_question(question_id: int):
     }
 
 
-@app.put("/questions/{question_id}")
+@app.put("/questions/{question_id}", dependencies=[Depends(require_admin)])
 def update_question(question_id: int, payload: QuestionIn):
     text = validate_question(payload)
 
@@ -152,7 +159,7 @@ def update_question(question_id: int, payload: QuestionIn):
     return {"id": question_id, "text": text, "options": options}
 
 
-@app.delete("/questions/{question_id}", status_code=204)
+@app.delete("/questions/{question_id}", status_code=204, dependencies=[Depends(require_admin)])
 def delete_question(question_id: int):
     with get_connection() as conn:
         cur = conn.execute(
@@ -163,7 +170,7 @@ def delete_question(question_id: int):
             raise HTTPException(status_code=404, detail="Pergunta não encontrada.")
 
 
-@app.post("/rooms", status_code=201)
+@app.post("/rooms", status_code=201, dependencies=[Depends(require_admin)])
 def create_room():
     with get_connection() as conn:
         count = conn.execute(
