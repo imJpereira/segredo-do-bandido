@@ -1,0 +1,182 @@
+[
+  {
+    "text": "No RabbitMQ, qual tipo de exchange entrega uma cópia da mensagem para todas as filas vinculadas a ele, ignorando a routing key?",
+    "options": [
+      { "text": "direct", "is_correct": false },
+      { "text": "topic", "is_correct": false },
+      { "text": "fanout", "is_correct": true },
+      { "text": "headers", "is_correct": false }
+    ]
+  },
+  {
+    "text": "Qual protocolo de camada de aplicação é utilizado por padrão pelo RabbitMQ para troca de mensagens?",
+    "options": [
+      { "text": "AMQP", "is_correct": true },
+      { "text": "SMTP", "is_correct": false },
+      { "text": "SNMP", "is_correct": false },
+      { "text": "FTP", "is_correct": false }
+    ]
+  },
+  {
+    "text": "No SQLite, qual modo de jornal permite leituras simultâneas enquanto uma escrita está ocorrendo?",
+    "options": [
+      { "text": "DELETE", "is_correct": false },
+      { "text": "TRUNCATE", "is_correct": false },
+      { "text": "WAL (Write-Ahead Logging)", "is_correct": true },
+      { "text": "MEMORY", "is_correct": false }
+    ]
+  },
+  {
+    "text": "Em uma API RESTful, qual código de status HTTP indica que um novo recurso foi criado com sucesso?",
+    "options": [
+      { "text": "200 OK", "is_correct": false },
+      { "text": "201 Created", "is_correct": true },
+      { "text": "204 No Content", "is_correct": false },
+      { "text": "202 Accepted", "is_correct": false }
+    ]
+  },
+  {
+    "text": "Qual é a principal vantagem do protocolo WebSocket em relação ao HTTP tradicional em jogos em tempo real?",
+    "options": [
+      { "text": "Comunicação bidirecional contínua em uma única conexão TCP", "is_correct": true },
+      { "text": "Criptografia automática sem necessidade de TLS", "is_correct": false },
+      { "text": "Armazenamento automático de estado no banco de dados", "is_correct": false },
+      { "text": "Substituição completa do protocolo IP", "is_correct": false }
+    ]
+  },
+  {
+    "text": "Segundo o Teorema CAP para sistemas distribuídos, quais são as três propriedades que não podem ser garantidas simultaneamente na presença de partições?",
+    "options": [
+      { "text": "Concorrência, Autenticação e Persistência", "is_correct": false },
+      { "text": "Consistência, Disponibilidade e Tolerância a Partições", "is_correct": true },
+      { "text": "Cache, Assincronismo e Paralelismo", "is_correct": false },
+      { "text": "Criptografia, Auditoria e Performance", "is_correct": false }
+    ]
+  },
+  {
+    "text": "Em sistemas distribuídos, o que significa dizer que uma operação é idempotente?",
+    "options": [
+      { "text": "Ela executa em tempo constante independente da carga", "is_correct": false },
+      { "text": "Ela nunca falha mesmo sem conexão de rede", "is_correct": false },
+      { "text": "Executá-la uma ou várias vezes produz o mesmo efeito no estado do sistema", "is_correct": true },
+      { "text": "Ela bloqueia todas as outras requisições até terminar", "is_correct": false }
+    ]
+  },
+  {
+    "text": "No FastAPI, qual código HTTP é retornado por padrão quando a validação dos dados de entrada falha?",
+    "options": [
+      { "text": "400 Bad Request", "is_correct": false },
+      { "text": "404 Not Found", "is_correct": false },
+      { "text": "422 Unprocessable Entity", "is_correct": true },
+      { "text": "500 Internal Server Error", "is_correct": false }
+    ]
+  },
+  {
+    "text": "Qual método HTTP é semanticamente adequado para remover um recurso em uma API REST?",
+    "options": [
+      { "text": "POST", "is_correct": false },
+      { "text": "PUT", "is_correct": false },
+      { "text": "DELETE", "is_correct": true },
+      { "text": "PATCH", "is_correct": false }
+    ]
+  },
+  {
+    "text": "O que ocorre quando dois processos tentam modificar um mesmo recurso compartilhado sem sincronização adequada, gerando resultados imprevisíveis?",
+    "options": [
+      { "text": "Condição de corrida (Race Condition)", "is_correct": true },
+      { "text": "Balanceamento de carga (Load Balancing)", "is_correct": false },
+      { "text": "Sharding de dados", "is_correct": false },
+      { "text": "Serialização JSON", "is_correct": false }
+    ]
+  },
+  {
+    "text": "Qual é o papel de um Message Broker como o RabbitMQ em uma arquitetura distribuída?",
+    "options": [
+      { "text": "Renderizar páginas HTML diretamente no navegador", "is_correct": false },
+      { "text": "Desacoplar produtores e consumidores por meio de filas e mensagens assíncronas", "is_correct": true },
+      { "text": "Compilar código Python para código de máquina ARM", "is_correct": false },
+      { "text": "Substituir o sistema operacional da Raspberry Pi", "is_correct": false }
+    ]
+  },
+  {
+    "text": "Na Raspberry Pi, o que significa a sigla GPIO usada para controlar LEDs e buzzers?",
+    "options": [
+      { "text": "General Purpose Input/Output", "is_correct": true },
+      { "text": "Global Protocol for Internet Operations", "is_correct": false },
+      { "text": "Graphical Processing Internal Output", "is_correct": false },
+      { "text": "Gate Programmable Integrated Oscillator", "is_correct": false }
+    ]
+  },
+  {
+    "text": "Qual é a função de um resistor ligado em série com um LED conectado ao pino GPIO da Raspberry Pi?",
+    "options": [
+      { "text": "Aumentar a tensão de 3.3V para 12V", "is_correct": false },
+      { "text": "Limitar a corrente elétrica para proteger o LED e a porta GPIO", "is_correct": true },
+      { "text": "Converter o sinal digital em pacote TCP/IP", "is_correct": false },
+      { "text": "Armazenar energia quando a Raspberry Pi é desligada", "is_correct": false }
+    ]
+  },
+  {
+    "text": "Qual porta TCP é utilizada por padrão pelo broker RabbitMQ para conexões AMQP sem TLS?",
+    "options": [
+      { "text": "3306", "is_correct": false },
+      { "text": "5432", "is_correct": false },
+      { "text": "5672", "is_correct": true },
+      { "text": "6379", "is_correct": false }
+    ]
+  },
+  {
+    "text": "Em Python, qual biblioteca padrão fornece a infraestrutura para escrever código concorrente usando a sintaxe async/await?",
+    "options": [
+      { "text": "multiprocessing", "is_correct": false },
+      { "text": "asyncio", "is_correct": true },
+      { "text": "tkinter", "is_correct": false },
+      { "text": "pickle", "is_correct": false }
+    ]
+  },
+  {
+    "text": "Em redes locais, qual protocolo permite descobrir o endereço IP de um dispositivo usando nomes como raspberrypi.local sem um servidor DNS central?",
+    "options": [
+      { "text": "mDNS (Multicast DNS)", "is_correct": true },
+      { "text": "BGP (Border Gateway Protocol)", "is_correct": false },
+      { "text": "IMAP", "is_correct": false },
+      { "text": "SSH", "is_correct": false }
+    ]
+  },
+  {
+    "text": "Qual servidor ASGI é comumente utilizado para executar aplicações FastAPI em produção e desenvolvimento?",
+    "options": [
+      { "text": "Uvicorn", "is_correct": true },
+      { "text": "Apache Tomcat", "is_correct": false },
+      { "text": "Microsoft IIS", "is_correct": false },
+      { "text": "Sendmail", "is_correct": false }
+    ]
+  },
+  {
+    "text": "No navegador, qual API do JavaScript permite persistir dados localmente sem prazo de expiração mesmo após fechar a aba?",
+    "options": [
+      { "text": "localStorage", "is_correct": true },
+      { "text": "Math.random", "is_correct": false },
+      { "text": "setInterval", "is_correct": false },
+      { "text": "console.log", "is_correct": false }
+    ]
+  },
+  {
+    "text": "Em sistemas distribuídos, por que o relógio do servidor costuma ser usado como única fonte da verdade para um timer de partida?",
+    "options": [
+      { "text": "Porque navegadores não conseguem exibir números na tela", "is_correct": false },
+      { "text": "Para evitar divergências de relógio entre clientes e impedir manipulação no navegador", "is_correct": true },
+      { "text": "Porque o JavaScript não possui funções de tempo", "is_correct": false },
+      { "text": "Para reduzir o tamanho das tabelas no banco de dados", "is_correct": false }
+    ]
+  },
+  {
+    "text": "No modelo de confirmação de mensagens do RabbitMQ, para que serve o ACK enviado pelo consumidor?",
+    "options": [
+      { "text": "Para reiniciar o servidor RabbitMQ após cada leitura", "is_correct": false },
+      { "text": "Para informar ao broker que a mensagem foi processada e pode ser removida da fila", "is_correct": true },
+      { "text": "Para criar uma nova fila temporária no banco de dados", "is_correct": false },
+      { "text": "Para desconectar todos os produtores ativos", "is_correct": false }
+    ]
+  }
+]
