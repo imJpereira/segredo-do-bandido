@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import api.config  # noqa: F401
 from api import events
 from api.db import init_db
+from api.routers import votes
 
 
 @asynccontextmanager
@@ -25,6 +26,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.include_router(votes.router)
 
 
 @app.get("/health")
