@@ -68,7 +68,7 @@ Abra http://localhost:5500: a página de teste mostra `API: ok`.
 
 O controlador da bomba (`hardware/`) é um processo separado e só roda na Raspberry; a API e o frontend rodam sem ele.
 
-## Ambiente na Raspberry Pi
+
 
 - **Modelo:** Raspberry Pi 4 Model B Rev 1.5 (aarch64, Debian 13 Trixie, 8 GB de RAM — `7819 MiB` totais)
 - **Endereço na rede do laboratório:**
@@ -83,12 +83,12 @@ O controlador da bomba (`hardware/`) é um processo separado e só roda na Raspb
   - Processo `beam.smp` (RabbitMQ 3.13.7): **~150 MiB RSS** (`153.288 KB`)
   - Uso total do sistema (SO + Docker + RabbitMQ ocioso): **621 MiB** usados de **7.819 MiB** (**~7,2 GiB** livres/disponíveis)
 
-### Testar publicação e consumo no RabbitMQ
+
 
 ```bash
 .venv/bin/python scripts/test_rabbitmq.py
 ```
 
-## Fluxo de trabalho
+
 
 Uma branch por issue (nome gerado pelo Linear) e pull request para a `main` com pelo menos 1 revisão.
