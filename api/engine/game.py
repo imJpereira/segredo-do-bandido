@@ -5,7 +5,7 @@ import time
 from api import events
 from api.config import INITIAL_TIME_SECONDS
 from api.db import get_connection
-from api.engine.votes import RoomNotFound, players
+from api.engine.votes import RoomNotFound, players, start_round_timer
 
 
 class StartRejected(Exception):
@@ -61,4 +61,5 @@ async def start_game(room: str) -> dict:
     }
     await events.publish("game_started", {"room": room, "deadline": deadline})
     await events.publish("question", {"room": room, **question})
+    start_round_timer(room)
     return {"code": room, "status": "in_progress", "deadline": deadline}
