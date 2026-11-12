@@ -10,6 +10,7 @@ from pydantic import BaseModel
 import api.config
 from api import events
 from api.db import get_connection, init_db
+from api.engine import game, votes as votes_engine
 from api.routers import votes
 
 
@@ -195,6 +196,16 @@ def create_room():
                 continue
 
     return {"code": code, "status": "lobby"}
+
+
+@app.post("/rooms/{code}/start", dependencies=[Depends(require_admin)])
+async def start_room(code: str):
+    try:
+        return await game.start_game(code)
+    except votes_engine.RoomNotFound as error:
+        raise HTTPException(status_code=404, detail=str(error))
+    except game.StartRejected as error:
+        raise HTTPException(status_code=409, detail=str(error))
 
 
 @app.get("/rooms/{code}")
