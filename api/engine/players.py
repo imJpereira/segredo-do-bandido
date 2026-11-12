@@ -2,7 +2,7 @@ from contextlib import closing
 
 from api import events
 from api.db import get_connection
-from api.engine.votes import RoomNotFound, players
+from api.engine.votes import RoomNotFound, close_round_if_all_voted, players
 
 MAX_PLAYERS = 30
 
@@ -44,3 +44,4 @@ async def join_room(room: str, player_id: str, nickname: str) -> None:
 async def leave_room(room: str, player_id: str) -> None:
     players.get(room, set()).discard(player_id)
     await events.publish("lobby_update", {"room": room, "players": connected_players(room)})
+    await close_round_if_all_voted(room)
