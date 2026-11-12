@@ -87,6 +87,7 @@ O controlador da bomba (`hardware/`) é um processo separado e só roda na Raspb
 
 ```bash
 .venv/bin/python scripts/test_rabbitmq.py
+.venv/bin/python -m scripts.seed
 ```
 
 
