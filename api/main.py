@@ -1,5 +1,7 @@
 from contextlib import asynccontextmanager
 import os
+import secrets
+import sqlite3
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -159,3 +161,27 @@ def delete_question(question_id: int):
         )
         if cur.rowcount == 0:
             raise HTTPException(status_code=404, detail="Pergunta não encontrada.")
+
+
+@app.post("/rooms", status_code=201)
+def create_room():
+    with get_connection() as conn:
+        count = conn.execute(
+            "SELECT COUNT(*) FROM questions WHERE is_active = 1"
+        ).fetchone()[0]
+        if count < 3:
+            raise HTTPException(
+                status_code=422,
+                detail="São necessárias pelo menos 3 perguntas cadastradas para abrir uma sala.",
+            )
+
+        while True:
+            code = str(secrets.randbelow(9000) + 1000)
+            try:
+                conn.execute("INSERT INTO sessions (code) VALUES (?)", (code,))
+                break
+            except sqlite3.IntegrityError:
+                continue
+
+    return {"code": code, "status": "lobby"}
+
