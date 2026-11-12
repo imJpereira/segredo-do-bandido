@@ -5,7 +5,7 @@ import sqlite3
 import time
 
 from api import events
-from api.config import ROUND_TIME_SECONDS
+from api.config import ROUND_TIME_SECONDS, TIME_PENALTY_SECONDS
 from api.db import get_connection
 
 players: dict[str, set[str]] = {}
@@ -154,6 +154,7 @@ async def close_round(room: str) -> None:
             "counts": counts,
         },
     )
+    await advance_game(room, winner, correct)
 
 
 async def publish_question(room: str) -> None:
@@ -187,3 +188,92 @@ async def publish_question(room: str) -> None:
             "options": [{"id": o["id"], "text": o["text"]} for o in options],
         },
     )
+
+
+async def end_game(room: str, status: str, reason: str | None = None) -> None:
+    with closing(get_connection()) as conn, conn:
+        ended = conn.execute(
+            "UPDATE sessions SET status = ? WHERE code = ? AND status = 'in_progress'",
+            (status, room),
+        )
+    if ended.rowcount == 0:
+        return
+    stop_round_timer(room)
+    if status == "won":
+        await events.publish("game_won", {"room": room})
+    else:
+        await events.publish("game_lost", {"room": room, "reason": reason})
+
+
+async def open_next_vote(room: str, next_round: bool) -> None:
+    with closing(get_connection()) as conn, conn:
+        if next_round:
+            conn.execute(
+                "UPDATE sessions SET current_round = current_round + 1, current_attempt = 1 WHERE code = ?",
+                (room,),
+            )
+        else:
+            conn.execute(
+                "UPDATE sessions SET current_attempt = current_attempt + 1 WHERE code = ?",
+                (room,),
+            )
+    start_round_timer(room)
+    await publish_question(room)
+
+
+async def advance_game(room: str, winner: int, correct: bool) -> None:
+    with closing(get_connection()) as conn, conn:
+        session = conn.execute(
+            "SELECT id, current_round, deadline FROM sessions WHERE code = ?", (room,)
+        ).fetchone()
+        current_round = session["current_round"]
+        if not correct:
+            deadline = session["deadline"] - TIME_PENALTY_SECONDS
+            conn.execute("UPDATE sessions SET deadline = ? WHERE id = ?", (deadline, session["id"]))
+            conn.execute(
+                "INSERT INTO eliminated_options (session_id, round, option_id) VALUES (?, ?, ?)",
+                (session["id"], current_round, winner),
+            )
+            remaining = [
+                row["id"]
+                for row in conn.execute(
+                    """
+                    SELECT o.id FROM options o
+                    JOIN session_questions sq ON sq.question_id = o.question_id
+                    WHERE sq.session_id = ? AND sq.question_order = ?
+                      AND o.id NOT IN (
+                          SELECT option_id FROM eliminated_options WHERE session_id = ? AND round = ?
+                      )
+                    ORDER BY o.id
+                    """,
+                    (session["id"], current_round, session["id"], current_round),
+                )
+            ]
+
+    if not correct:
+        await events.publish(
+            "time_penalty",
+            {"room": room, "seconds": TIME_PENALTY_SECONDS, "deadline": deadline},
+        )
+        if deadline <= time.time():
+            await end_game(room, "lost", "time_expired")
+            return
+        if len(remaining) > 1:
+            await open_next_vote(room, next_round=False)
+            return
+        await events.publish(
+            "round_result",
+            {
+                "room": room,
+                "round": current_round,
+                "winning_option_id": remaining[0],
+                "correct": True,
+                "counts": {},
+                "auto": True,
+            },
+        )
+
+    if current_round == 3:
+        await end_game(room, "won")
+        return
+    await open_next_vote(room, next_round=True)
