@@ -10,7 +10,7 @@ from pydantic import BaseModel
 import api.config
 from api import events
 from api.db import get_connection, init_db
-from api.engine import game, votes as votes_engine
+from api.engine import game, players, votes as votes_engine
 from api.routers import votes
 
 
@@ -250,7 +250,7 @@ def get_room(code: str):
         "current_round": room["current_round"],
         "current_attempt": room["current_attempt"],
         "deadline": room["deadline"],
-        "players": [],
+        "players": players.connected_players(code),
         "question": question,
     }
 
