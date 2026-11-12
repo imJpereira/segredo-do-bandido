@@ -10,6 +10,7 @@ from pydantic import BaseModel
 import api.config
 from api import events
 from api.db import get_connection, init_db
+from api.routers import votes
 
 
 @asynccontextmanager
@@ -28,6 +29,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.include_router(votes.router)
 
 
 class OptionIn(BaseModel):
