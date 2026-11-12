@@ -11,6 +11,7 @@ from api.db import get_connection
 players: dict[str, set[str]] = {}
 closed: set[tuple[str, int, int]] = set()
 timers: dict[str, asyncio.Task] = {}
+watchers: dict[str, asyncio.Task] = {}
 
 
 class VoteRejected(Exception):
@@ -73,6 +74,25 @@ def stop_round_timer(room: str) -> None:
     timer = timers.pop(room, None)
     if timer is not None and timer is not asyncio.current_task():
         timer.cancel()
+
+
+def start_deadline_watcher(room: str) -> None:
+    watchers[room] = asyncio.create_task(_end_on_deadline(room))
+
+
+async def _end_on_deadline(room: str) -> None:
+    while True:
+        with closing(get_connection()) as conn:
+            session = conn.execute(
+                "SELECT status, deadline FROM sessions WHERE code = ?", (room,)
+            ).fetchone()
+        if session is None or session["status"] != "in_progress":
+            return
+        remaining = session["deadline"] - time.time()
+        if remaining <= 0:
+            await end_game(room, "lost", "time_expired")
+            return
+        await asyncio.sleep(min(remaining, 1))
 
 
 def start_round_timer(room: str) -> None:
@@ -227,8 +247,9 @@ async def advance_game(room: str, winner: int, correct: bool) -> None:
             "SELECT id, current_round, deadline FROM sessions WHERE code = ?", (room,)
         ).fetchone()
         current_round = session["current_round"]
+        deadline = session["deadline"]
         if not correct:
-            deadline = session["deadline"] - TIME_PENALTY_SECONDS
+            deadline -= TIME_PENALTY_SECONDS
             conn.execute("UPDATE sessions SET deadline = ? WHERE id = ?", (deadline, session["id"]))
             conn.execute(
                 "INSERT INTO eliminated_options (session_id, round, option_id) VALUES (?, ?, ?)",
@@ -255,9 +276,10 @@ async def advance_game(room: str, winner: int, correct: bool) -> None:
             "time_penalty",
             {"room": room, "seconds": TIME_PENALTY_SECONDS, "deadline": deadline},
         )
-        if deadline <= time.time():
-            await end_game(room, "lost", "time_expired")
-            return
+    if deadline <= time.time():
+        await end_game(room, "lost", "time_expired")
+        return
+    if not correct:
         if len(remaining) > 1:
             await open_next_vote(room, next_round=False)
             return
