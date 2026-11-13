@@ -18,6 +18,16 @@ def get_room_snapshot(code: str) -> dict:
         if not room:
             raise RoomSnapshotNotFound("Sala não encontrada.")
 
+        voted_player_rows = conn.execute(
+            """
+            SELECT player_id FROM votes
+            WHERE session_id = ? AND round = ? AND attempt = ?
+            ORDER BY player_id
+            """,
+            (room["id"], room["current_round"], room["current_attempt"]),
+        ).fetchall()
+        voted_player_ids = [row["player_id"] for row in voted_player_rows]
+
         question = None
         q_row = conn.execute(
             """
@@ -40,10 +50,13 @@ def get_room_snapshot(code: str) -> dict:
             question = {
                 "id": q_row["id"],
                 "text": q_row["text"],
+                "round": room["current_round"],
+                "attempt": room["current_attempt"],
                 "options": [{"id": o["id"], "text": o["text"]} for o in opts],
                 "eliminated_options": [e["option_id"] for e in eliminated],
             }
 
+    connected_players = players.connected_players(code)
     return {
         "code": room["code"],
         "status": room["status"],
@@ -51,6 +64,11 @@ def get_room_snapshot(code: str) -> dict:
         "current_attempt": room["current_attempt"],
         "deadline": room["deadline"],
         "server_now": time.time(),
-        "players": players.connected_players(code),
+        "players": connected_players,
+        "vote_progress": {
+            "voted": len(voted_player_ids),
+            "total": len(connected_players),
+            "voted_player_ids": voted_player_ids,
+        },
         "question": question,
     }

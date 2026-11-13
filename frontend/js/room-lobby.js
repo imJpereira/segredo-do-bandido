@@ -1,4 +1,4 @@
-import { createRoom, getRoom, startRoom } from "./api.js";
+import { createRoom, getRoom, startRoom, submitVote } from "./api.js";
 import { getItem, removeItem, setItem } from "./storage.js";
 import { setView } from "./router.js";
 import { getState, patchState } from "./state.js";
@@ -9,6 +9,9 @@ const LOBBY_ROOM_CODE_KEY = "segredo.lobby.roomCode";
 const LOBBY_NICKNAME_KEY = "segredo.lobby.nickname";
 const POLL_MS = 2000;
 const MAX_PLAYERS = 30;
+const TOTAL_ROUNDS = 3;
+const OPTION_STYLE_CLASSES = ["option-a", "option-b", "option-c", "option-d"];
+const OPTION_LABELS = ["A", "B", "C", "D"];
 
 let lobbyPollTimer = null;
 let currentAdminRoomCode = "";
@@ -99,9 +102,19 @@ export function setupRoomLobby() {
   const lobbyCount = document.getElementById("lobby-player-count");
   const lobbyStatus = document.getElementById("lobby-room-status");
   const lobbyFeedback = document.getElementById("lobby-feedback");
+  const votingRoundLabel = document.getElementById("voting-round-label");
+  const votingQuestionText = document.getElementById("voting-question-text");
+  const votingOptions = document.getElementById("voting-options");
+  const votingFeedback = document.getElementById("voting-feedback");
+  const votingProgressBar = document.getElementById("voting-progress-bar");
+  const votingProgressLabel = document.getElementById("voting-progress-label");
   const gameOverTitle = document.getElementById("game-over-title");
   const gameOverCopy = document.getElementById("game-over-copy");
   const playerId = ensurePlayerId();
+  let submittingVote = false;
+  let optimisticVotedAttemptKey = null;
+  let lastSeenRound = null;
+  let lastSeenAttempt = null;
 
   function playerSession() {
     const { roomCode, nickname } = getLobbyContext();
@@ -113,6 +126,210 @@ export function setupRoomLobby() {
 
   function startFallbackPolling() {
     startLobbyPolling(refreshPlayerLobby);
+  }
+
+  function getVoteAttemptKey(round, attempt) {
+    const { roomCode } = getLobbyContext();
+    if (!roomCode || !Number.isInteger(round) || !Number.isInteger(attempt)) {
+      return null;
+    }
+    return `${roomCode}:${round}:${attempt}`;
+  }
+
+  function hasVotedCurrentAttempt() {
+    const appState = getState();
+    const votedPlayers = Array.isArray(appState.voteVotedPlayerIds) ? appState.voteVotedPlayerIds : [];
+    const round = Number(appState.voteRound);
+    const attempt = Number(appState.voteAttempt);
+    const attemptKey = getVoteAttemptKey(round, attempt);
+    if (!attemptKey) {
+      return false;
+    }
+    if (votedPlayers.includes(playerId)) {
+      return true;
+    }
+    return optimisticVotedAttemptKey === attemptKey;
+  }
+
+  function setVotingFeedback(message, tone = "") {
+    if (!votingFeedback) {
+      return;
+    }
+    setFeedback(votingFeedback, message, tone);
+  }
+
+  function updateVoteProgress() {
+    const appState = getState();
+    const voted = Number(appState.voteProgressVoted) || 0;
+    const total = Number(appState.voteProgressTotal) || 0;
+    if (votingProgressLabel) {
+      votingProgressLabel.textContent = `${voted} de ${total} votaram`;
+    }
+    if (votingProgressBar) {
+      const width = total > 0 ? Math.min(100, Math.round((voted / total) * 100)) : 0;
+      votingProgressBar.style.width = `${width}%`;
+    }
+  }
+
+  function applyVoteState(source = {}) {
+    const round = Number(source.round) || null;
+    const attempt = Number(source.attempt) || null;
+    const options = Array.isArray(source.options) ? source.options : [];
+    const eliminated = Array.isArray(source.eliminated_options) ? source.eliminated_options : [];
+    const progress = source.vote_progress && typeof source.vote_progress === "object"
+      ? source.vote_progress
+      : {};
+    const votedPlayers = Array.isArray(progress.voted_player_ids)
+      ? progress.voted_player_ids
+      : (Array.isArray(source.voted_player_ids) ? source.voted_player_ids : []);
+
+    const isReopen = (
+      Number.isInteger(round) &&
+      Number.isInteger(attempt) &&
+      Number.isInteger(lastSeenRound) &&
+      Number.isInteger(lastSeenAttempt) &&
+      round === lastSeenRound &&
+      attempt > lastSeenAttempt
+    );
+
+    const isNewRound = (
+      Number.isInteger(round) &&
+      Number.isInteger(lastSeenRound) &&
+      round > lastSeenRound
+    );
+
+    if (Number.isInteger(round)) {
+      lastSeenRound = round;
+    }
+    if (Number.isInteger(attempt)) {
+      lastSeenAttempt = attempt;
+    }
+
+    patchState({
+      voteRound: round,
+      voteAttempt: attempt,
+      voteQuestion: typeof source.text === "string" ? source.text : null,
+      voteOptions: options,
+      voteEliminatedOptionIds: eliminated,
+      voteProgressVoted: Number(progress.voted) || 0,
+      voteProgressTotal: Number(progress.total) || 0,
+      voteVotedPlayerIds: votedPlayers,
+    });
+
+    const currentAttemptKey = getVoteAttemptKey(round, attempt);
+    if (optimisticVotedAttemptKey && currentAttemptKey && optimisticVotedAttemptKey !== currentAttemptKey) {
+      optimisticVotedAttemptKey = null;
+    }
+
+    if (isReopen && !hasVotedCurrentAttempt()) {
+      setVotingFeedback("Votação reaberta.", "feedback-success");
+    } else if (isNewRound) {
+      setVotingFeedback("");
+    }
+  }
+
+  function renderVoting() {
+    const appState = getState();
+    const round = Number.isInteger(appState.voteRound) ? appState.voteRound : null;
+    const attempt = Number.isInteger(appState.voteAttempt) ? appState.voteAttempt : null;
+    const options = Array.isArray(appState.voteOptions) ? appState.voteOptions : [];
+    const eliminated = new Set(Array.isArray(appState.voteEliminatedOptionIds) ? appState.voteEliminatedOptionIds : []);
+    const locked = hasVotedCurrentAttempt();
+
+    if (votingRoundLabel) {
+      const roundText = Number.isInteger(round) ? round : "--";
+      votingRoundLabel.textContent = `Rodada ${roundText} de ${TOTAL_ROUNDS}`;
+    }
+    if (votingQuestionText) {
+      votingQuestionText.textContent = appState.voteQuestion || "Aguardando pergunta...";
+    }
+    updateVoteProgress();
+
+    if (!votingOptions) {
+      return;
+    }
+
+    votingOptions.innerHTML = "";
+    const hasOptions = options.length > 0;
+    if (!hasOptions) {
+      const placeholder = document.createElement("button");
+      placeholder.type = "button";
+      placeholder.disabled = true;
+      placeholder.className = "option option-a";
+      placeholder.textContent = "Aguardando opções...";
+      votingOptions.appendChild(placeholder);
+      return;
+    }
+
+    options.forEach((option, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `option ${OPTION_STYLE_CLASSES[index % OPTION_STYLE_CLASSES.length]}`;
+      const label = OPTION_LABELS[index] || String(index + 1);
+      button.textContent = `${label} · ${option.text}`;
+
+      const isEliminated = eliminated.has(option.id);
+      if (isEliminated) {
+        button.classList.add("option-eliminated");
+      }
+      const disabled = locked || submittingVote || isEliminated;
+      button.disabled = disabled;
+      if (!disabled) {
+        button.addEventListener("click", () => sendVote(option.id));
+      }
+      votingOptions.appendChild(button);
+    });
+
+    if (locked && votingFeedback && !votingFeedback.textContent) {
+      setVotingFeedback("✓ Voto registrado! Aguardando os demais jogadores...", "feedback-success");
+    }
+    if (!locked && !submittingVote && votingFeedback?.textContent === "Enviando voto...") {
+      setVotingFeedback("");
+    }
+  }
+
+  async function sendVote(optionId) {
+    const session = playerSession();
+    const appState = getState();
+    if (!session || !Number.isInteger(Number(appState.voteRound)) || !Number.isInteger(Number(appState.voteAttempt))) {
+      setVotingFeedback("Não foi possível votar agora. Aguarde a próxima atualização.", "feedback-error");
+      return;
+    }
+    if (hasVotedCurrentAttempt() || submittingVote) {
+      return;
+    }
+
+    submittingVote = true;
+    setVotingFeedback("Enviando voto...");
+    renderVoting();
+
+    try {
+      await submitVote(appState.apiBaseUrl, {
+        room: session.roomCode,
+        player_id: playerId,
+        option_id: optionId,
+      });
+      optimisticVotedAttemptKey = getVoteAttemptKey(Number(appState.voteRound), Number(appState.voteAttempt));
+      const votedPlayers = Array.isArray(appState.voteVotedPlayerIds) ? appState.voteVotedPlayerIds : [];
+      patchState({
+        voteVotedPlayerIds: votedPlayers.includes(playerId) ? votedPlayers : [...votedPlayers, playerId],
+      });
+      setVotingFeedback("✓ Voto registrado! Aguardando os demais jogadores...", "feedback-success");
+    } catch (error) {
+      if (error.message?.includes("já votou")) {
+        const votedPlayers = Array.isArray(appState.voteVotedPlayerIds) ? appState.voteVotedPlayerIds : [];
+        optimisticVotedAttemptKey = getVoteAttemptKey(Number(appState.voteRound), Number(appState.voteAttempt));
+        patchState({
+          voteVotedPlayerIds: votedPlayers.includes(playerId) ? votedPlayers : [...votedPlayers, playerId],
+        });
+        setVotingFeedback("✓ Voto já registrado nesta tentativa.", "feedback-success");
+      } else {
+        setVotingFeedback(error.message, "feedback-error");
+      }
+    } finally {
+      submittingVote = false;
+      renderVoting();
+    }
   }
 
   function renderGameOver(status) {
@@ -148,6 +365,13 @@ export function setupRoomLobby() {
       gameDeadline: typeof snapshot.deadline === "number" ? snapshot.deadline : null,
       serverNow: typeof snapshot.server_now === "number" ? snapshot.server_now : null,
     });
+    if (snapshot.question) {
+      applyVoteState({
+        ...snapshot.question,
+        vote_progress: snapshot.vote_progress,
+      });
+    }
+    renderVoting();
 
     if (snapshot.status === "in_progress") {
       setView("voting");
@@ -195,6 +419,26 @@ export function setupRoomLobby() {
       setFeedback(lobbyFeedback, "A partida começou.", "feedback-success");
       setView("voting");
     },
+    onQuestion: (payload) => {
+      applyVoteState(payload);
+      renderVoting();
+      setView("voting");
+    },
+    onVoteProgress: (payload) => {
+      const votedPlayerIds = Array.isArray(payload.voted_player_ids) ? payload.voted_player_ids : [];
+      patchState({
+        voteProgressVoted: Number(payload.voted) || 0,
+        voteProgressTotal: Number(payload.total) || 0,
+        voteVotedPlayerIds: votedPlayerIds,
+      });
+      if (Number(payload.voted) === 0 && Number(getState().voteAttempt) > 1 && !hasVotedCurrentAttempt()) {
+        setVotingFeedback("Votação reaberta.", "feedback-success");
+      }
+      renderVoting();
+    },
+    onRoundResult: () => {
+      setView("round-result");
+    },
     onTimePenalty: (payload) => {
       if (typeof payload.deadline === "number") {
         patchState({
@@ -208,6 +452,11 @@ export function setupRoomLobby() {
     },
     onGameLost: () => {
       renderGameOver("lost");
+    },
+    onError: (payload) => {
+      if (payload?.message) {
+        setVotingFeedback(payload.message, "feedback-error");
+      }
     },
   });
 
@@ -303,6 +552,13 @@ export function setupRoomLobby() {
         gameDeadline: typeof room.deadline === "number" ? room.deadline : null,
         serverNow: typeof room.server_now === "number" ? room.server_now : null,
       });
+      if (room.question) {
+        applyVoteState({
+          ...room.question,
+          vote_progress: room.vote_progress,
+        });
+      }
+      renderVoting();
 
       if (!quiet) {
         if (room.players?.length >= MAX_PLAYERS) {
@@ -380,6 +636,7 @@ export function setupRoomLobby() {
   adminStartButton?.addEventListener("click", handleStartRoom);
   copyButton?.addEventListener("click", copyRoomCode);
   playerEntryForm?.addEventListener("submit", handlePlayerEntry);
+  renderVoting();
 
   const cachedLobby = getLobbyContext();
   if (cachedLobby.roomCode && cachedLobby.nickname) {

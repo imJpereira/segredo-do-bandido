@@ -22,6 +22,20 @@ class RoomNotFound(VoteRejected):
     pass
 
 
+def get_vote_progress(conn: sqlite3.Connection, room: str, session_id: int, round_number: int, attempt: int) -> dict:
+    voted_player_rows = conn.execute(
+        "SELECT player_id FROM votes WHERE session_id = ? AND round = ? AND attempt = ?",
+        (session_id, round_number, attempt),
+    ).fetchall()
+    voted_player_ids = [row["player_id"] for row in voted_player_rows]
+    return {
+        "room": room,
+        "voted": len(voted_player_ids),
+        "total": len(players.get(room, set())),
+        "voted_player_ids": voted_player_ids,
+    }
+
+
 async def register_vote(room: str, player_id: str, option_id: int) -> None:
     with closing(get_connection()) as conn, conn:
         session = conn.execute(
@@ -61,12 +75,11 @@ async def register_vote(room: str, player_id: str, option_id: int) -> None:
         except sqlite3.IntegrityError:
             raise VoteRejected("Jogador já votou nesta tentativa.")
 
-        voted = conn.execute(
-            "SELECT COUNT(*) FROM votes WHERE session_id = ? AND round = ? AND attempt = ?",
-            (session["id"], session["current_round"], session["current_attempt"]),
-        ).fetchone()[0]
+        progress = get_vote_progress(
+            conn, room, session["id"], session["current_round"], session["current_attempt"]
+        )
 
-    await events.publish("vote_progress", {"room": room, "voted": voted, "total": len(players[room])})
+    await events.publish("vote_progress", progress)
     await close_round_if_all_voted(room)
 
 
@@ -180,7 +193,7 @@ async def close_round(room: str) -> None:
 async def publish_question(room: str) -> None:
     with closing(get_connection()) as conn:
         session = conn.execute(
-            "SELECT id, current_round FROM sessions WHERE code = ?", (room,)
+            "SELECT id, current_round, current_attempt FROM sessions WHERE code = ?", (room,)
         ).fetchone()
         question = conn.execute(
             """
@@ -198,6 +211,9 @@ async def publish_question(room: str) -> None:
             """,
             (question["id"], session["id"], session["current_round"]),
         ).fetchall()
+        progress = get_vote_progress(
+            conn, room, session["id"], session["current_round"], session["current_attempt"]
+        )
     await events.publish(
         "question",
         {
@@ -205,9 +221,11 @@ async def publish_question(room: str) -> None:
             "id": question["id"],
             "text": question["text"],
             "round": session["current_round"],
+            "attempt": session["current_attempt"],
             "options": [{"id": o["id"], "text": o["text"]} for o in options],
         },
     )
+    await events.publish("vote_progress", progress)
 
 
 async def end_game(room: str, status: str, reason: str | None = None) -> None:

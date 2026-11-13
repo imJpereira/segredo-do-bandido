@@ -8,6 +8,14 @@ const state = {
   gameDeadline: null,
   serverNow: null,
   serverNowCapturedAtMs: null,
+  voteRound: null,
+  voteAttempt: null,
+  voteQuestion: null,
+  voteOptions: [],
+  voteEliminatedOptionIds: [],
+  voteProgressVoted: 0,
+  voteProgressTotal: 0,
+  voteVotedPlayerIds: [],
 };
 
 const listeners = new Set();

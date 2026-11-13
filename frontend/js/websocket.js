@@ -20,9 +20,13 @@ export function createRealtimeClient(config) {
     onSnapshot,
     onLobbyUpdate,
     onGameStarted,
+    onQuestion,
+    onVoteProgress,
+    onRoundResult,
     onTimePenalty,
     onGameWon,
     onGameLost,
+    onError,
   } = config;
 
   let socket = null;
@@ -93,6 +97,18 @@ export function createRealtimeClient(config) {
       onGameStarted?.(data);
       return;
     }
+    if (eventType === "question") {
+      onQuestion?.(data);
+      return;
+    }
+    if (eventType === "vote_progress") {
+      onVoteProgress?.(data);
+      return;
+    }
+    if (eventType === "round_result") {
+      onRoundResult?.(data);
+      return;
+    }
     if (eventType === "time_penalty") {
       onTimePenalty?.(data);
       return;
@@ -103,6 +119,10 @@ export function createRealtimeClient(config) {
     }
     if (eventType === "game_lost") {
       onGameLost?.(data);
+      return;
+    }
+    if (eventType === "error") {
+      onError?.(data);
     }
   }
 

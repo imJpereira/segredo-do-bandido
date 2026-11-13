@@ -178,19 +178,16 @@
         </section>
 
         <section class="view card is-hidden" data-view="voting">
-          <p class="view-kicker">Rodada 1 de 3</p>
-          <h2 class="view-title">Qual pista confirma o local?</h2>
-          <div class="vote-options stack-sm">
-            <button class="option option-a" type="button">A · A planta do galpão com marcações</button>
-            <button class="option option-b" type="button">B · O horário no bilhete</button>
-            <button class="option option-c option-eliminated" type="button" disabled>C · A placa do carro</button>
-            <button class="option option-d" type="button">D · A lista de contatos</button>
+          <p id="voting-round-label" class="view-kicker">Rodada -- de 3</p>
+          <h2 id="voting-question-text" class="view-title">Aguardando pergunta...</h2>
+          <div id="voting-options" class="vote-options stack-sm">
+            <button class="option option-a" type="button" disabled>A · Aguardando opção</button>
           </div>
-          <p class="feedback feedback-success">✓ Voto registrado! Aguardando os demais jogadores...</p>
+          <p id="voting-feedback" class="feedback"></p>
           <div class="progress">
-            <div class="progress-bar" style="width: 67%;"></div>
+            <div id="voting-progress-bar" class="progress-bar" style="width: 0%;"></div>
           </div>
-          <p class="hint">8 de 12 votaram</p>
+          <p id="voting-progress-label" class="hint">0 de 0 votaram</p>
         </section>
 
         <section class="view card is-hidden" data-view="round-result">

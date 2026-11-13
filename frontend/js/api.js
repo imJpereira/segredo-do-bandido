@@ -86,3 +86,12 @@ export async function getRoom(apiBaseUrl, code) {
   const response = await fetch(`${apiBaseUrl}/rooms/${encodeURIComponent(code)}`);
   return parseResponse(response);
 }
+
+export async function submitVote(apiBaseUrl, payload) {
+  const response = await fetch(`${apiBaseUrl}/votes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return parseResponse(response);
+}
