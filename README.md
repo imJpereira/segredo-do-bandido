@@ -63,25 +63,12 @@ A API é só REST/WebSocket (não serve HTML). Em outro terminal, sirva o fronte
 ```bash
 python3 -m http.server 5500 --directory frontend
 ```
-
 Abra http://localhost:5500: a página de teste mostra `API: ok`.
 
 O controlador da bomba (`hardware/`) é um processo separado e só roda na Raspberry; a API e o frontend rodam sem ele.
 
 
 
-- **Modelo:** Raspberry Pi 4 Model B Rev 1.5 (aarch64, Debian 13 Trixie, 8 GB de RAM — `7819 MiB` totais)
-- **Endereço na rede do laboratório:**
-  - **IP (`wlan0`):** `10.1.25.148` (mDNS: `raspberrypi.local`)
-  - **API FastAPI (1 worker):** `http://10.1.25.148:8000` (rota de teste: `http://10.1.25.148:8000/health` → `{"status":"ok"}`)
-  - **Painel do RabbitMQ:** `http://10.1.25.148:15672` (`segredo` / `bandido123`)
-- **Isolamento de clientes na rede:**
-  - Dispositivos na rede `10.1.25.x` alcançam diretamente a Raspberry Pi em `http://10.1.25.148:8000/health` sem bloqueio entre clientes (e o plano B de hotspot próprio permanece previsto na issue BAG-113 do marco 6).
-- **Serviços em segundo plano:**
-  - `api` (Uvicorn com `--workers 1`) e `rabbitmq` (`rabbitmq:3-management`) rodam em containers Docker com `restart: unless-stopped` e serviço `docker` ativo no `systemd`, permanecendo no ar mesmo após fechar o terminal SSH.
-- **Consumo de memória com RabbitMQ ocioso:**
-  - Processo `beam.smp` (RabbitMQ 3.13.7): **~150 MiB RSS** (`153.288 KB`)
-  - Uso total do sistema (SO + Docker + RabbitMQ ocioso): **621 MiB** usados de **7.819 MiB** (**~7,2 GiB** livres/disponíveis)
 
 
 
@@ -90,5 +77,8 @@ O controlador da bomba (`hardware/`) é um processo separado e só roda na Raspb
 ```
 
 
+```bash
+python3 scripts/test_gpio.py
+```
 
 Uma branch por issue (nome gerado pelo Linear) e pull request para a `main` com pelo menos 1 revisão.
