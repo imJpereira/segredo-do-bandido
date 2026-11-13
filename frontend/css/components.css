@@ -40,6 +40,10 @@
   background: linear-gradient(145deg, #2ecc71, #199d53);
 }
 
+.button-danger {
+  background: linear-gradient(145deg, #d72638, #830f1d);
+}
+
 .button-ghost {
   background: rgba(229, 231, 235, 0.04);
   border-color: rgba(229, 231, 235, 0.22);
@@ -118,6 +122,10 @@
 
 .feedback-success {
   color: var(--color-success);
+}
+
+.feedback-error {
+  color: #ff97a1;
 }
 
 .hint {

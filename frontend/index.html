@@ -88,19 +88,52 @@
               <button class="button button-nav" type="button" disabled>Salas</button>
               <button class="button button-nav" type="button" disabled>Relatórios</button>
             </nav>
-            <form class="stack-sm">
+            <form id="question-form" class="stack-sm">
+              <label class="field">
+                <span class="field-label">Senha de administração</span>
+                <input id="admin-password" class="input" type="password" autocomplete="current-password" required>
+              </label>
               <label class="field">
                 <span class="field-label">Pergunta</span>
-                <input class="input" type="text" placeholder="Qual pista reforça a hipótese?">
+                <input id="question-text" class="input" type="text" placeholder="Qual pista reforça a hipótese?" required>
               </label>
               <div class="option-grid">
-                <label class="field"><span class="field-label">Opção A</span><input class="input" type="text"></label>
-                <label class="field"><span class="field-label">Opção B</span><input class="input" type="text"></label>
-                <label class="field"><span class="field-label">Opção C</span><input class="input" type="text"></label>
-                <label class="field"><span class="field-label">Opção D</span><input class="input" type="text"></label>
+                <label class="field">
+                  <span class="field-label">Opção A</span>
+                  <input id="option-a" class="input" type="text" required>
+                  <span class="radio-inline"><input type="radio" name="correct-option" value="0"> Correta</span>
+                </label>
+                <label class="field">
+                  <span class="field-label">Opção B</span>
+                  <input id="option-b" class="input" type="text" required>
+                  <span class="radio-inline"><input type="radio" name="correct-option" value="1"> Correta</span>
+                </label>
+                <label class="field">
+                  <span class="field-label">Opção C</span>
+                  <input id="option-c" class="input" type="text" required>
+                  <span class="radio-inline"><input type="radio" name="correct-option" value="2"> Correta</span>
+                </label>
+                <label class="field">
+                  <span class="field-label">Opção D</span>
+                  <input id="option-d" class="input" type="text" required>
+                  <span class="radio-inline"><input type="radio" name="correct-option" value="3"> Correta</span>
+                </label>
               </div>
-              <p class="badge badge-success">✓ Estrutura pronta para validação de 4 opções e 1 correta</p>
+              <p id="question-validation-feedback" class="feedback"></p>
+              <p id="question-api-feedback" class="feedback"></p>
+              <div class="cluster">
+                <button id="question-cancel" class="button button-ghost" type="button">Cancelar</button>
+                <button id="question-submit" class="button button-primary" type="submit">Salvar Pergunta</button>
+              </div>
             </form>
+            <section class="questions-panel stack-sm">
+              <div class="questions-panel-head">
+                <h3 class="panel-title">Perguntas cadastradas</h3>
+                <button id="questions-refresh" class="button button-ghost" type="button">Atualizar</button>
+              </div>
+              <p id="questions-list-feedback" class="feedback"></p>
+              <div id="questions-list" class="questions-list"></div>
+            </section>
           </div>
         </section>
 

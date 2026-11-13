@@ -92,6 +92,60 @@
   gap: var(--space-sm);
 }
 
+.radio-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.84rem;
+  color: var(--color-muted);
+}
+
+.questions-panel {
+  border-top: 1px solid rgba(229, 231, 235, 0.16);
+  padding-top: var(--space-md);
+}
+
+.questions-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.questions-list {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.question-item {
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(229, 231, 235, 0.15);
+  background: rgba(229, 231, 235, 0.03);
+}
+
+.question-item-text {
+  margin: 0;
+  font-weight: 600;
+}
+
+.question-item-options {
+  margin: 0.45rem 0 0;
+  padding-left: 1rem;
+  color: var(--color-muted);
+}
+
+.question-item-actions {
+  display: flex;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+}
+
+.question-item-actions .button {
+  padding: 0.5rem 0.7rem;
+  font-size: 0.84rem;
+}
+
 .room-code {
   display: flex;
   gap: var(--space-sm);

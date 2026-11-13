@@ -1,4 +1,5 @@
 import { fetchHealth } from "./api.js";
+import { setupAdminQuestions } from "./admin-questions.js";
 import { getApiBaseUrl, resetApiBaseUrl, saveApiBaseUrl } from "./config.js";
 import { bindViewButtons } from "./router.js";
 import { patchState, subscribe } from "./state.js";
@@ -91,6 +92,7 @@ function startHealthPolling() {
 function bootstrap() {
   bindViewButtons();
   bindSettingsControls();
+  setupAdminQuestions();
   subscribe((state) => {
     renderView(state.currentView);
     renderConnectionBadge(state.connectionStatus);

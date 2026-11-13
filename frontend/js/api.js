@@ -15,3 +15,53 @@ export async function fetchHealth(apiBaseUrl) {
     window.clearTimeout(timeoutId);
   }
 }
+
+function adminHeaders(password) {
+  return {
+    "Content-Type": "application/json",
+    "x-admin-password": password,
+  };
+}
+
+async function parseResponse(response) {
+  if (response.status === 204) {
+    return null;
+  }
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.detail || "Não foi possível concluir a operação.");
+  }
+  return data;
+}
+
+export async function listQuestions(apiBaseUrl) {
+  const response = await fetch(`${apiBaseUrl}/questions`);
+  return parseResponse(response);
+}
+
+export async function createQuestion(apiBaseUrl, password, payload) {
+  const response = await fetch(`${apiBaseUrl}/questions`, {
+    method: "POST",
+    headers: adminHeaders(password),
+    body: JSON.stringify(payload),
+  });
+  return parseResponse(response);
+}
+
+export async function updateQuestion(apiBaseUrl, password, questionId, payload) {
+  const response = await fetch(`${apiBaseUrl}/questions/${questionId}`, {
+    method: "PUT",
+    headers: adminHeaders(password),
+    body: JSON.stringify(payload),
+  });
+  return parseResponse(response);
+}
+
+export async function deleteQuestion(apiBaseUrl, password, questionId) {
+  const response = await fetch(`${apiBaseUrl}/questions/${questionId}`, {
+    method: "DELETE",
+    headers: adminHeaders(password),
+  });
+  return parseResponse(response);
+}
