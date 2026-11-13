@@ -1,10 +1,12 @@
 from contextlib import asynccontextmanager
 import os
+from pathlib import Path
 import secrets
 import sqlite3
 
 from fastapi import Depends, FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import api.config
@@ -15,10 +17,16 @@ from api.room_state import RoomSnapshotNotFound, get_room_snapshot
 from api.routers import votes
 from api import ws_hub
 
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     init_db()
+    if os.getenv("SEED_ON_START"):
+        from scripts import seed
+
+        seed.main()
     await events.setup()
     yield
     await events.close()
@@ -261,4 +269,7 @@ async def websocket_endpoint(websocket: WebSocket):
         pass
     finally:
         await ws_hub.unregister_connection(websocket)
+
+
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 

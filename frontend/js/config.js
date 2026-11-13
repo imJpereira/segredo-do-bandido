@@ -7,6 +7,9 @@ function normalizeUrl(value) {
 }
 
 function defaultApiBaseUrl() {
+  if (window.location.protocol === "https:") {
+    return window.location.origin;
+  }
   const host = window.location.hostname || "localhost";
   const protocol = window.location.protocol === "https:" ? "https:" : "http:";
   return `${protocol}//${host}:8000`;
