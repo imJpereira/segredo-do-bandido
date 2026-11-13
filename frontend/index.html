@@ -65,16 +65,17 @@
           <p class="view-kicker">Entrada do Jogador</p>
           <h2 class="view-title">Entre na operação</h2>
           <p class="view-copy">Junte-se à sua turma e ajude a desarmar a bomba.</p>
-          <form class="stack-md">
+          <form id="player-entry-form" class="stack-md">
             <label class="field">
               <span class="field-label">Código da sala</span>
-              <input class="input" type="text" placeholder="Ex.: B7F3Q" inputmode="text">
+              <input id="player-room-code" class="input" type="text" placeholder="Ex.: 1234" inputmode="text" required>
             </label>
             <label class="field">
               <span class="field-label">Apelido</span>
-              <input class="input" type="text" placeholder="Seu apelido">
+              <input id="player-nickname" class="input" type="text" placeholder="Seu apelido" required>
             </label>
-            <button class="button button-primary" type="button">Entrar na sala</button>
+            <p id="player-entry-feedback" class="feedback"></p>
+            <button id="player-entry-submit" class="button button-primary" type="submit">Entrar na sala</button>
             <p class="hint">Caiu a internet? Você volta para o jogo automaticamente.</p>
           </form>
         </section>
@@ -140,15 +141,26 @@
         <section class="view card is-hidden" data-view="admin-room">
           <p class="view-kicker">Administração</p>
           <h2 class="view-title">Sala da Investigação</h2>
+          <form id="admin-room-form" class="stack-sm">
+            <label class="field">
+              <span class="field-label">Senha de administração</span>
+              <input id="admin-room-password" class="input" type="password" autocomplete="current-password" required>
+            </label>
+            <div class="cluster">
+              <button id="admin-open-room" class="button button-primary" type="submit">Abrir Sala</button>
+            </div>
+            <p id="admin-room-feedback" class="feedback"></p>
+          </form>
           <div class="room-code">
-            <span class="room-code-value">BND742</span>
-            <button class="button button-secondary" type="button">Copiar</button>
+            <span id="admin-room-code" class="room-code-value">----</span>
+            <button id="admin-copy-room-code" class="button button-secondary" type="button" disabled>Copiar</button>
           </div>
+          <p id="admin-room-address" class="hint"></p>
           <div class="status-grid">
-            <p class="status-item"><span>Jogadores conectados</span><strong>4 / 30</strong></p>
-            <p class="status-item"><span>Status</span><strong>Aguardando jogadores</strong></p>
+            <p class="status-item"><span>Jogadores conectados</span><strong id="admin-room-players">0</strong></p>
+            <p class="status-item"><span>Status</span><strong id="admin-room-status">Aguardando jogadores</strong></p>
           </div>
-          <button class="button button-success" type="button">Iniciar Jogo</button>
+          <button id="admin-start-room" class="button button-success" type="button" disabled>Iniciar Jogo</button>
         </section>
 
         <section class="view card is-hidden" data-view="player-lobby">
@@ -156,11 +168,12 @@
           <h2 class="view-title">Aguardando investigação</h2>
           <p class="view-copy">Aguardando o administrador iniciar a investigação...</p>
           <div class="status-grid">
-            <p class="status-item"><span>Código da sala</span><strong>B7F3Q</strong></p>
-            <p class="status-item"><span>Apelido</span><strong>Estudante 01</strong></p>
-            <p class="status-item"><span>Jogadores conectados</span><strong>8</strong></p>
-            <p class="status-item"><span>Status</span><strong>Lobby</strong></p>
+            <p class="status-item"><span>Código da sala</span><strong id="lobby-room-code">----</strong></p>
+            <p class="status-item"><span>Apelido</span><strong id="lobby-player-nickname">----</strong></p>
+            <p class="status-item"><span>Jogadores conectados</span><strong id="lobby-player-count">0</strong></p>
+            <p class="status-item"><span>Status</span><strong id="lobby-room-status">Lobby</strong></p>
           </div>
+          <p id="lobby-feedback" class="feedback"></p>
         </section>
 
         <section class="view card is-hidden" data-view="voting">

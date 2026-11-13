@@ -65,3 +65,24 @@ export async function deleteQuestion(apiBaseUrl, password, questionId) {
   });
   return parseResponse(response);
 }
+
+export async function createRoom(apiBaseUrl, password) {
+  const response = await fetch(`${apiBaseUrl}/rooms`, {
+    method: "POST",
+    headers: adminHeaders(password),
+  });
+  return parseResponse(response);
+}
+
+export async function startRoom(apiBaseUrl, password, code) {
+  const response = await fetch(`${apiBaseUrl}/rooms/${encodeURIComponent(code)}/start`, {
+    method: "POST",
+    headers: adminHeaders(password),
+  });
+  return parseResponse(response);
+}
+
+export async function getRoom(apiBaseUrl, code) {
+  const response = await fetch(`${apiBaseUrl}/rooms/${encodeURIComponent(code)}`);
+  return parseResponse(response);
+}
