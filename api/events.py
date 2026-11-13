@@ -34,12 +34,14 @@ async def setup():
 
 
 async def close():
-    await _connection.close()
+    if _connection is not None:
+        await _connection.close()
 
 
 async def publish(event_type: str, data: dict):
     if event_type not in EVENT_TYPES:
         raise ValueError(f"Evento desconhecido: {event_type}")
     await ws_hub.broadcast_event(event_type, data)
-    body = json.dumps({"type": event_type, "data": data}).encode()
-    await _exchange.publish(aio_pika.Message(body, content_type="application/json"), routing_key="")
+    if _exchange is not None:
+        body = json.dumps({"type": event_type, "data": data}).encode()
+        await _exchange.publish(aio_pika.Message(body, content_type="application/json"), routing_key="")

@@ -232,9 +232,14 @@ async def websocket_endpoint(websocket: WebSocket):
     joined = False
     try:
         while True:
-            payload = await websocket.receive_json()
-            event_type = payload.get("type")
-            if event_type != "join_lobby":
+            try:
+                payload = await websocket.receive_json()
+            except ValueError:
+                await ws_hub.send_error(websocket, "Payload de join_lobby inválido.")
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                return
+
+            if not isinstance(payload, dict) or payload.get("type") != "join_lobby":
                 await ws_hub.send_error(websocket, "Evento websocket não suportado.")
                 await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
                 return
