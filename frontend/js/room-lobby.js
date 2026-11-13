@@ -12,6 +12,9 @@ const MAX_PLAYERS = 30;
 const TOTAL_ROUNDS = 3;
 const OPTION_STYLE_CLASSES = ["option-a", "option-b", "option-c", "option-d"];
 const OPTION_LABELS = ["A", "B", "C", "D"];
+const LOSS_REASON_LABELS = {
+  time_expired: "O tempo acabou.",
+};
 
 let lobbyPollTimer = null;
 let currentAdminRoomCode = "";
@@ -108,13 +111,28 @@ export function setupRoomLobby() {
   const votingFeedback = document.getElementById("voting-feedback");
   const votingProgressBar = document.getElementById("voting-progress-bar");
   const votingProgressLabel = document.getElementById("voting-progress-label");
+  const roundResultKicker = document.getElementById("round-result-kicker");
+  const roundResultTitle = document.getElementById("round-result-title");
+  const roundResultCard = document.getElementById("round-result-card");
+  const roundResultStatus = document.getElementById("round-result-status");
+  const roundResultPenalty = document.getElementById("round-result-penalty");
+  const roundResultWinningOption = document.getElementById("round-result-winning-option");
+  const roundResultVotes = document.getElementById("round-result-votes");
+  const roundResultPercent = document.getElementById("round-result-percent");
+  const roundResultCopy = document.getElementById("round-result-copy");
+  const gameOverKicker = document.getElementById("game-over-kicker");
   const gameOverTitle = document.getElementById("game-over-title");
   const gameOverCopy = document.getElementById("game-over-copy");
+  const gameOverReason = document.getElementById("game-over-reason");
+  const gameOverFinishButton = document.getElementById("game-over-finish");
   const playerId = ensurePlayerId();
   let submittingVote = false;
   let optimisticVotedAttemptKey = null;
   let lastSeenRound = null;
   let lastSeenAttempt = null;
+  let latestRoundResult = null;
+  let latestPenaltySeconds = null;
+  let gameFinished = false;
 
   function playerSession() {
     const { roomCode, nickname } = getLobbyContext();
@@ -156,6 +174,36 @@ export function setupRoomLobby() {
       return;
     }
     setFeedback(votingFeedback, message, tone);
+  }
+
+  function resetRoundResultState() {
+    latestRoundResult = null;
+    latestPenaltySeconds = null;
+  }
+
+  function formatPenalty(seconds) {
+    const safeSeconds = Math.max(0, Number(seconds) || 0);
+    return `-${safeSeconds}s`;
+  }
+
+  function normalizeCounts(rawCounts) {
+    const entries = Object.entries(rawCounts || {});
+    const mapped = entries.map(([optionId, votes]) => ({
+      optionId: Number(optionId),
+      votes: Number(votes) || 0,
+    }));
+    return mapped.filter((item) => Number.isInteger(item.optionId) && item.votes >= 0);
+  }
+
+  function describeOption(optionId) {
+    const options = Array.isArray(getState().voteOptions) ? getState().voteOptions : [];
+    const optionIndex = options.findIndex((item) => item.id === optionId);
+    const option = optionIndex >= 0 ? options[optionIndex] : null;
+    if (!option) {
+      return `ID ${optionId}`;
+    }
+    const label = OPTION_LABELS[optionIndex] || String(optionIndex + 1);
+    return `${label} · ${option.text}`;
   }
 
   function updateVoteProgress() {
@@ -234,7 +282,7 @@ export function setupRoomLobby() {
     const attempt = Number.isInteger(appState.voteAttempt) ? appState.voteAttempt : null;
     const options = Array.isArray(appState.voteOptions) ? appState.voteOptions : [];
     const eliminated = new Set(Array.isArray(appState.voteEliminatedOptionIds) ? appState.voteEliminatedOptionIds : []);
-    const locked = hasVotedCurrentAttempt();
+    const locked = hasVotedCurrentAttempt() || gameFinished;
 
     if (votingRoundLabel) {
       const roundText = Number.isInteger(round) ? round : "--";
@@ -332,23 +380,171 @@ export function setupRoomLobby() {
     }
   }
 
-  function renderGameOver(status) {
+  function renderRoundResult(result) {
+    if (!result || typeof result !== "object") {
+      return;
+    }
+
+    latestRoundResult = result;
+    const round = Number(result.round) || Number(getState().voteRound) || null;
+    const winnerOptionId = Number(result.winning_option_id);
+    const counts = normalizeCounts(result.counts);
+    const winnerCount = counts.find((item) => item.optionId === winnerOptionId)?.votes || 0;
+    const totalVotes = counts.reduce((acc, item) => acc + item.votes, 0);
+    const percent = totalVotes > 0 ? Math.round((winnerCount / totalVotes) * 100) : 0;
+    const winnerText = Number.isInteger(winnerOptionId) ? describeOption(winnerOptionId) : "--";
+
+    if (roundResultKicker) {
+      roundResultKicker.textContent = Number.isInteger(round)
+        ? `Resultado da Rodada ${round}`
+        : "Resultado da Rodada";
+    }
+    if (roundResultTitle) {
+      roundResultTitle.textContent = `Maioria da equipe votou em: ${winnerText}`;
+    }
+    if (roundResultWinningOption) {
+      roundResultWinningOption.textContent = winnerText;
+    }
+    if (roundResultVotes) {
+      roundResultVotes.textContent = totalVotes > 0 ? `${winnerCount} voto(s)` : "--";
+    }
+    if (roundResultPercent) {
+      roundResultPercent.textContent = totalVotes > 0 ? `${percent}%` : "--";
+    }
+
+    if (roundResultCard) {
+      roundResultCard.classList.remove("result-card-danger", "result-card-success");
+      roundResultCard.classList.add(result.correct ? "result-card-success" : "result-card-danger");
+    }
+
+    if (result.auto) {
+      if (roundResultStatus) {
+        roundResultStatus.textContent = "✓ Pergunta resolvida automaticamente";
+      }
+      if (roundResultCopy) {
+        roundResultCopy.textContent = "Restava apenas uma alternativa disponível para a equipe.";
+      }
+    } else if (result.correct) {
+      if (roundResultStatus) {
+        roundResultStatus.textContent = "✓ Evidência confirmada!";
+      }
+      if (roundResultCopy) {
+        roundResultCopy.textContent = "Boa leitura da equipe. A investigação segue para a próxima rodada.";
+      }
+    } else {
+      if (roundResultStatus) {
+        roundResultStatus.textContent = "✕ Opção eliminada";
+      }
+      if (roundResultCopy) {
+        roundResultCopy.textContent = "A alternativa escolhida estava errada. Ajustem a estratégia.";
+      }
+    }
+
+    if (roundResultPenalty) {
+      roundResultPenalty.textContent = "";
+      if (result.correct) {
+        roundResultPenalty.textContent = "Sem penalidade nesta rodada.";
+      }
+      if (!result.correct && latestPenaltySeconds !== null) {
+        roundResultPenalty.textContent = `Penalidade de tempo: ${formatPenalty(latestPenaltySeconds)}`;
+      }
+    }
+
+    setView("round-result");
+  }
+
+  function applyRoundPenalty(payload) {
+    latestPenaltySeconds = Number(payload?.seconds);
+    if (
+      !Number.isFinite(latestPenaltySeconds) ||
+      !latestRoundResult ||
+      latestRoundResult.correct
+    ) {
+      return;
+    }
+    if (roundResultPenalty) {
+      roundResultPenalty.textContent = `Penalidade de tempo: ${formatPenalty(latestPenaltySeconds)}`;
+    }
+  }
+
+  function readableLossReason(reason) {
+    if (!reason) {
+      return "A equipe não conseguiu desarmar a bomba a tempo.";
+    }
+    return LOSS_REASON_LABELS[reason] || "A equipe não conseguiu desarmar a bomba.";
+  }
+
+  function renderGameOver(status, reason = null) {
+    gameFinished = true;
+    submittingVote = false;
+
     if (status === "won") {
+      if (gameOverKicker) {
+        gameOverKicker.textContent = "Missão concluída";
+      }
       if (gameOverTitle) {
         gameOverTitle.textContent = "✓ BOMBA DESARMADA!";
       }
       if (gameOverCopy) {
-        gameOverCopy.textContent = "Parabéns, equipe! Vocês descobriram o segredo do bandido.";
+        gameOverCopy.textContent = "Parabéns, equipe! Vocês descobriram o segredo do bandido e impediram o crime a tempo.";
+      }
+      if (gameOverReason) {
+        setFeedback(gameOverReason, "Vitória confirmada pelo servidor.", "feedback-success");
+      }
+      if (gameOverFinishButton) {
+        gameOverFinishButton.classList.remove("button-danger");
       }
     } else {
+      if (gameOverKicker) {
+        gameOverKicker.textContent = "Fim da investigação";
+      }
       if (gameOverTitle) {
-        gameOverTitle.textContent = "✕ A BOMBA EXPLODIU!";
+        gameOverTitle.textContent = "✕ TEMPO ESGOTADO!";
       }
       if (gameOverCopy) {
-        gameOverCopy.textContent = "O tempo acabou. Reagrupem a equipe e tentem novamente.";
+        gameOverCopy.textContent = "A equipe não conseguiu desarmar a bomba a tempo.";
+      }
+      if (gameOverReason) {
+        setFeedback(gameOverReason, readableLossReason(reason), "feedback-error");
+      }
+      if (gameOverFinishButton) {
+        gameOverFinishButton.classList.add("button-danger");
       }
     }
+    renderVoting();
     setView("game-over");
+  }
+
+  function resetLocalMatchState() {
+    clearLobbyContext();
+    stopLobbyPolling();
+    realtimeClient.disconnect(true);
+    resetRoundResultState();
+    gameFinished = false;
+    optimisticVotedAttemptKey = null;
+    lastSeenRound = null;
+    lastSeenAttempt = null;
+    patchState({
+      realtimeStatus: "idle",
+      gameDeadline: null,
+      serverNow: null,
+      voteRound: null,
+      voteAttempt: null,
+      voteQuestion: null,
+      voteOptions: [],
+      voteEliminatedOptionIds: [],
+      voteProgressVoted: 0,
+      voteProgressTotal: 0,
+      voteVotedPlayerIds: [],
+    });
+    if (lobbyFeedback) {
+      setFeedback(lobbyFeedback, "");
+    }
+    setVotingFeedback("");
+    if (gameOverReason) {
+      setFeedback(gameOverReason, "");
+    }
+    setView("entry");
   }
 
   function applySnapshot(snapshot) {
@@ -356,6 +552,7 @@ export function setupRoomLobby() {
       return;
     }
 
+    gameFinished = false;
     lobbyRoomCode.textContent = snapshot.code || "----";
     const connected = Array.isArray(snapshot.players) ? snapshot.players : [];
     lobbyCount.textContent = String(connected.length);
@@ -378,7 +575,7 @@ export function setupRoomLobby() {
       return;
     }
     if (snapshot.status === "won" || snapshot.status === "lost") {
-      renderGameOver(snapshot.status);
+      renderGameOver(snapshot.status, snapshot.reason ?? null);
       return;
     }
     setView("player-lobby");
@@ -401,15 +598,23 @@ export function setupRoomLobby() {
       startFallbackPolling();
     },
     onSnapshot: (payload) => {
+      if (gameFinished) {
+        return;
+      }
       applySnapshot(payload);
       setFeedback(lobbyFeedback, "Reconectado e sincronizado com a sala.", "feedback-success");
     },
     onLobbyUpdate: (payload) => {
+      if (gameFinished) {
+        return;
+      }
       const connected = Array.isArray(payload.players) ? payload.players : [];
       lobbyCount.textContent = String(connected.length);
       setFeedback(lobbyFeedback, "Lobby atualizado em tempo real.", "feedback-success");
     },
     onGameStarted: (payload) => {
+      gameFinished = false;
+      resetRoundResultState();
       if (typeof payload.deadline === "number") {
         patchState({
           gameDeadline: payload.deadline,
@@ -420,11 +625,17 @@ export function setupRoomLobby() {
       setView("voting");
     },
     onQuestion: (payload) => {
+      if (gameFinished) {
+        return;
+      }
       applyVoteState(payload);
       renderVoting();
       setView("voting");
     },
     onVoteProgress: (payload) => {
+      if (gameFinished) {
+        return;
+      }
       const votedPlayerIds = Array.isArray(payload.voted_player_ids) ? payload.voted_player_ids : [];
       patchState({
         voteProgressVoted: Number(payload.voted) || 0,
@@ -436,24 +647,36 @@ export function setupRoomLobby() {
       }
       renderVoting();
     },
-    onRoundResult: () => {
-      setView("round-result");
+    onRoundResult: (payload) => {
+      if (gameFinished) {
+        return;
+      }
+      renderRoundResult(payload);
     },
     onTimePenalty: (payload) => {
+      if (gameFinished) {
+        return;
+      }
       if (typeof payload.deadline === "number") {
         patchState({
           gameDeadline: payload.deadline,
           serverNow: typeof payload.server_now === "number" ? payload.server_now : null,
         });
       }
+      applyRoundPenalty(payload);
     },
     onGameWon: () => {
+      resetRoundResultState();
       renderGameOver("won");
     },
-    onGameLost: () => {
-      renderGameOver("lost");
+    onGameLost: (payload) => {
+      resetRoundResultState();
+      renderGameOver("lost", payload?.reason ?? null);
     },
     onError: (payload) => {
+      if (gameFinished) {
+        return;
+      }
       if (payload?.message) {
         setVotingFeedback(payload.message, "feedback-error");
       }
@@ -571,10 +794,11 @@ export function setupRoomLobby() {
       }
 
       if (room.status === "in_progress") {
+        gameFinished = false;
         setFeedback(lobbyFeedback, "A partida começou.", "feedback-success");
         setView("voting");
       } else if (room.status === "won" || room.status === "lost") {
-        renderGameOver(room.status);
+        renderGameOver(room.status, room.reason ?? null);
       }
     } catch (error) {
       setFeedback(lobbyFeedback, error.message, "feedback-error");
@@ -585,6 +809,7 @@ export function setupRoomLobby() {
 
   async function handlePlayerEntry(event) {
     event.preventDefault();
+    gameFinished = false;
 
     const roomCode = playerRoomCode.value.trim().toUpperCase();
     const nickname = playerNickname.value.trim();
@@ -632,10 +857,15 @@ export function setupRoomLobby() {
       .catch(() => setFeedback(adminFeedback, "Não foi possível copiar o código.", "feedback-error"));
   }
 
+  function handleFinalizeGame() {
+    resetLocalMatchState();
+  }
+
   adminForm?.addEventListener("submit", handleOpenRoom);
   adminStartButton?.addEventListener("click", handleStartRoom);
   copyButton?.addEventListener("click", copyRoomCode);
   playerEntryForm?.addEventListener("submit", handlePlayerEntry);
+  gameOverFinishButton?.addEventListener("click", handleFinalizeGame);
   renderVoting();
 
   const cachedLobby = getLobbyContext();

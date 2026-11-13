@@ -24,16 +24,16 @@
       </div>
 
       <div class="topbar-actions">
-        <p id="connection-badge" class="badge badge-danger">● Verificando API</p>
+        <p id="connection-badge" class="badge badge-warning">● Conectando...</p>
         <p id="realtime-badge" class="badge badge-warning is-hidden">Reconectando...</p>
-        <button id="toggle-settings" class="button button-ghost" type="button">Configurar API</button>
+        <button id="toggle-settings" class="button button-ghost is-hidden" type="button" aria-label="Abrir ajustes técnicos">Ajustes técnicos</button>
       </div>
     </header>
 
-    <section id="settings-panel" class="card settings-panel is-hidden" aria-label="Configuração de API">
+    <section id="settings-panel" class="card settings-panel is-hidden" aria-label="Configuração avançada">
       <form id="api-config-form" class="stack-md">
         <label class="field">
-          <span class="field-label">URL base da API</span>
+          <span class="field-label">Servidor da partida</span>
           <input id="api-base-url" class="input" name="apiBaseUrl" type="url" placeholder="http://localhost:8000" required>
         </label>
         <div class="cluster">
@@ -41,23 +41,20 @@
           <button id="reset-api-url" class="button button-ghost" type="button">Restaurar padrão</button>
         </div>
         <p id="api-config-feedback" class="feedback"></p>
-        <p class="hint">WebSocket esperado: <code id="ws-endpoint-label"></code></p>
+        <p class="hint">Canal em tempo real: <code id="ws-endpoint-label"></code></p>
+        <p class="hint">Uso técnico de laboratório.</p>
       </form>
     </section>
 
     <main class="layout">
       <aside class="left-panel card stack-md">
-        <h2 class="panel-title">Painel de Estados</h2>
-        <p class="panel-text">Base da SPA para navegação da BAG-99.</p>
+        <h2 class="panel-title">Menu do Jogo</h2>
+        <p class="panel-text">Acesso rapido para administracao da partida.</p>
 
         <nav class="view-nav" aria-label="Navegação entre telas">
           <button class="button button-nav is-active" data-view-target="entry" type="button">Entrada</button>
-          <button class="button button-nav" data-view-target="admin-questions" type="button">Admin Perguntas</button>
-          <button class="button button-nav" data-view-target="admin-room" type="button">Abertura de Sala</button>
-          <button class="button button-nav" data-view-target="player-lobby" type="button">Lobby</button>
-          <button class="button button-nav" data-view-target="voting" type="button">Votação</button>
-          <button class="button button-nav" data-view-target="round-result" type="button">Resultado</button>
-          <button class="button button-nav" data-view-target="game-over" type="button">Fim de Jogo</button>
+          <button class="button button-nav" data-view-target="admin-questions" type="button">Perguntas</button>
+          <button class="button button-nav" data-view-target="admin-room" type="button">Sala</button>
         </nav>
       </aside>
 
@@ -86,9 +83,8 @@
           <h2 class="view-title">Cadastro de Perguntas</h2>
           <div class="admin-shell">
             <nav class="admin-nav">
-              <button class="button button-nav is-active" type="button">Perguntas</button>
-              <button class="button button-nav" type="button" disabled>Salas</button>
-              <button class="button button-nav" type="button" disabled>Relatórios</button>
+              <button class="button button-nav is-active" data-view-target="admin-questions" type="button">Perguntas</button>
+              <button class="button button-nav" data-view-target="admin-room" type="button">Sala</button>
             </nav>
             <form id="question-form" class="stack-sm">
               <label class="field">
@@ -191,22 +187,27 @@
         </section>
 
         <section class="view card is-hidden" data-view="round-result">
-          <p class="view-kicker">Resultado da Rodada 1</p>
-          <h2 class="view-title">Maioria da equipe votou em B</h2>
-          <div class="result-card result-card-danger">
-            <p class="result-main">Opção eliminada</p>
-            <p class="result-sub">Penalidade de tempo: -00:10</p>
+          <p id="round-result-kicker" class="view-kicker">Resultado da Rodada --</p>
+          <h2 id="round-result-title" class="view-title">Aguardando resultado da equipe...</h2>
+          <div id="round-result-card" class="result-card">
+            <p id="round-result-status" class="result-main"></p>
+            <p id="round-result-penalty" class="result-sub"></p>
           </div>
-          <p class="view-copy">A bomba está mais próxima. Continuem atentos às pistas.</p>
+          <div class="status-grid">
+            <p class="status-item"><span>Alternativa vencedora</span><strong id="round-result-winning-option">--</strong></p>
+            <p class="status-item"><span>Votos</span><strong id="round-result-votes">--</strong></p>
+            <p class="status-item"><span>Percentual</span><strong id="round-result-percent">--</strong></p>
+          </div>
+          <p id="round-result-copy" class="view-copy">Aguardando atualização da próxima etapa...</p>
         </section>
 
         <section class="view card is-hidden" data-view="game-over">
-          <p class="view-kicker">Tela Final</p>
+          <p id="game-over-kicker" class="view-kicker">Tela Final</p>
           <h2 id="game-over-title" class="view-title">✓ BOMBA DESARMADA!</h2>
           <p id="game-over-copy" class="view-copy">Parabéns, equipe! Vocês descobriram o segredo do bandido.</p>
+          <p id="game-over-reason" class="feedback"></p>
           <div class="cluster">
-            <button class="button button-success" type="button">Jogar Novamente</button>
-            <button class="button button-ghost" type="button">Sair da Sala</button>
+            <button id="game-over-finish" class="button button-ghost" type="button">Finalizar</button>
           </div>
         </section>
       </section>
@@ -214,7 +215,7 @@
       <aside class="right-panel card stack-md">
         <h2 class="panel-title">Timer / Bomba</h2>
         <div id="game-timer" class="timer timer-normal" aria-label="Tempo restante da rodada">00:00</div>
-        <p class="hint">Base preparada para sincronizar por deadline absoluto.</p>
+        <p class="hint">Relogio oficial da investigacao.</p>
         <div class="progress">
           <div class="progress-bar progress-violet" style="width: 25%;"></div>
         </div>

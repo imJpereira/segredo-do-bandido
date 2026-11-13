@@ -34,12 +34,12 @@ function renderConnectionBadge(status) {
 
   if (status === "checking") {
     badge.classList.add("badge-warning");
-    badge.textContent = "● Verificando API";
+    badge.textContent = "● Conectando...";
     return;
   }
 
   badge.classList.add("badge-danger");
-  badge.textContent = "● API indisponível";
+  badge.textContent = "● Sem conexão";
 }
 
 function renderRealtimeBadge(status) {
@@ -51,7 +51,7 @@ function renderRealtimeBadge(status) {
   badge.classList.remove("is-hidden", "badge-warning", "badge-success", "badge-danger");
   if (status === "connected") {
     badge.classList.add("badge-success");
-    badge.textContent = "● Tempo real ativo";
+    badge.textContent = "● Sincronizado";
     return;
   }
 
@@ -63,11 +63,22 @@ function renderRealtimeBadge(status) {
 
   if (status === "failed") {
     badge.classList.add("badge-danger");
-    badge.textContent = "Tempo real indisponível";
+    badge.textContent = "Sincronização indisponível";
     return;
   }
 
   badge.classList.add("is-hidden");
+}
+
+function renderSettingsVisibility(state) {
+  const toggleButton = document.getElementById("toggle-settings");
+  const panel = document.getElementById("settings-panel");
+  const adminViews = new Set(["admin-questions", "admin-room"]);
+  const shouldShow = adminViews.has(state.currentView);
+  toggleButton?.classList.toggle("is-hidden", !shouldShow);
+  if (!shouldShow) {
+    panel?.classList.add("is-hidden");
+  }
 }
 
 function bindSettingsControls() {
@@ -90,11 +101,11 @@ function bindSettingsControls() {
     event.preventDefault();
     const raw = input.value.trim();
     if (!raw) {
-      feedback.textContent = "Informe uma URL válida.";
+      feedback.textContent = "Informe um endereço válido.";
       return;
     }
     saveApiBaseUrl(raw);
-    feedback.textContent = "URL salva com sucesso.";
+    feedback.textContent = "Endereço salvo com sucesso.";
     patchState({ apiBaseUrl: getApiBaseUrl() });
     wsLabel.textContent = buildWsUrl(getApiBaseUrl());
     triggerHealthCheck();
@@ -103,7 +114,7 @@ function bindSettingsControls() {
   resetButton?.addEventListener("click", () => {
     const defaultUrl = resetApiBaseUrl();
     input.value = defaultUrl;
-    feedback.textContent = "URL padrão restaurada.";
+    feedback.textContent = "Endereço padrão restaurado.";
     patchState({ apiBaseUrl: defaultUrl });
     wsLabel.textContent = buildWsUrl(defaultUrl);
     triggerHealthCheck();
@@ -169,6 +180,7 @@ function bootstrap() {
   subscribe((state) => {
     latestState = state;
     renderView(state.currentView);
+    renderSettingsVisibility(state);
     renderConnectionBadge(state.connectionStatus);
     renderRealtimeBadge(state.realtimeStatus);
     renderTimer(state);

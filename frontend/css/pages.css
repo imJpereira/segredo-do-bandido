@@ -83,7 +83,7 @@
 
 .admin-nav {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-xs);
 }
 
@@ -202,6 +202,11 @@
   border-color: rgba(215, 38, 56, 0.6);
 }
 
+.result-card-success {
+  background: var(--color-success-soft);
+  border-color: rgba(46, 204, 113, 0.6);
+}
+
 .result-main {
   margin: 0;
   font-weight: 700;
@@ -210,6 +215,10 @@
 .result-sub {
   margin: var(--space-xs) 0 0;
   color: #ffb6bd;
+}
+
+.result-card-success .result-sub {
+  color: #a6f0c5;
 }
 
 @media (min-width: 760px) {
