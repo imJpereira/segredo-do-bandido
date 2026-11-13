@@ -66,7 +66,7 @@ async def register_vote(room: str, player_id: str, option_id: int) -> None:
             (session["id"], session["current_round"], session["current_attempt"]),
         ).fetchone()[0]
 
-    await events.publish("vote_progress", {"voted": voted, "total": len(players[room])})
+    await events.publish("vote_progress", {"room": room, "voted": voted, "total": len(players[room])})
     await close_round_if_all_voted(room)
 
 

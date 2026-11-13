@@ -1,7 +1,8 @@
 import { createRoom, getRoom, startRoom } from "./api.js";
 import { getItem, removeItem, setItem } from "./storage.js";
 import { setView } from "./router.js";
-import { getState } from "./state.js";
+import { getState, patchState } from "./state.js";
+import { createRealtimeClient } from "./websocket.js";
 
 const PLAYER_ID_KEY = "segredo.playerId";
 const LOBBY_ROOM_CODE_KEY = "segredo.lobby.roomCode";
@@ -98,6 +99,110 @@ export function setupRoomLobby() {
   const lobbyCount = document.getElementById("lobby-player-count");
   const lobbyStatus = document.getElementById("lobby-room-status");
   const lobbyFeedback = document.getElementById("lobby-feedback");
+  const gameOverTitle = document.getElementById("game-over-title");
+  const gameOverCopy = document.getElementById("game-over-copy");
+  const playerId = ensurePlayerId();
+
+  function playerSession() {
+    const { roomCode, nickname } = getLobbyContext();
+    if (!roomCode || !nickname) {
+      return null;
+    }
+    return { roomCode, nickname, playerId };
+  }
+
+  function startFallbackPolling() {
+    startLobbyPolling(refreshPlayerLobby);
+  }
+
+  function renderGameOver(status) {
+    if (status === "won") {
+      if (gameOverTitle) {
+        gameOverTitle.textContent = "✓ BOMBA DESARMADA!";
+      }
+      if (gameOverCopy) {
+        gameOverCopy.textContent = "Parabéns, equipe! Vocês descobriram o segredo do bandido.";
+      }
+    } else {
+      if (gameOverTitle) {
+        gameOverTitle.textContent = "✕ A BOMBA EXPLODIU!";
+      }
+      if (gameOverCopy) {
+        gameOverCopy.textContent = "O tempo acabou. Reagrupem a equipe e tentem novamente.";
+      }
+    }
+    setView("game-over");
+  }
+
+  function applySnapshot(snapshot) {
+    if (!snapshot || typeof snapshot !== "object") {
+      return;
+    }
+
+    lobbyRoomCode.textContent = snapshot.code || "----";
+    const connected = Array.isArray(snapshot.players) ? snapshot.players : [];
+    lobbyCount.textContent = String(connected.length);
+    lobbyStatus.textContent = normalizeRoomStatus(snapshot.status);
+
+    if (typeof snapshot.deadline === "number") {
+      patchState({ gameDeadline: snapshot.deadline });
+    }
+
+    if (snapshot.status === "in_progress") {
+      setView("voting");
+      return;
+    }
+    if (snapshot.status === "won" || snapshot.status === "lost") {
+      renderGameOver(snapshot.status);
+      return;
+    }
+    setView("player-lobby");
+  }
+
+  const realtimeClient = createRealtimeClient({
+    getApiBaseUrl: () => getState().apiBaseUrl,
+    getSession: playerSession,
+    onConnecting: () => {
+      patchState({ realtimeStatus: "reconnecting" });
+      startFallbackPolling();
+    },
+    onConnected: () => {
+      patchState({ realtimeStatus: "connected" });
+      stopLobbyPolling();
+      refreshPlayerLobby({ quiet: true });
+    },
+    onDisconnected: () => {
+      patchState({ realtimeStatus: "reconnecting" });
+      startFallbackPolling();
+    },
+    onSnapshot: (payload) => {
+      applySnapshot(payload);
+      setFeedback(lobbyFeedback, "Reconectado e sincronizado com a sala.", "feedback-success");
+    },
+    onLobbyUpdate: (payload) => {
+      const connected = Array.isArray(payload.players) ? payload.players : [];
+      lobbyCount.textContent = String(connected.length);
+      setFeedback(lobbyFeedback, "Lobby atualizado em tempo real.", "feedback-success");
+    },
+    onGameStarted: (payload) => {
+      if (typeof payload.deadline === "number") {
+        patchState({ gameDeadline: payload.deadline });
+      }
+      setFeedback(lobbyFeedback, "A partida começou.", "feedback-success");
+      setView("voting");
+    },
+    onTimePenalty: (payload) => {
+      if (typeof payload.deadline === "number") {
+        patchState({ gameDeadline: payload.deadline });
+      }
+    },
+    onGameWon: () => {
+      renderGameOver("won");
+    },
+    onGameLost: () => {
+      renderGameOver("lost");
+    },
+  });
 
   function renderAdminRoom(room) {
     currentAdminRoomCode = room.code || "";
@@ -171,10 +276,13 @@ export function setupRoomLobby() {
     }
   }
 
-  async function refreshPlayerLobby() {
+  async function refreshPlayerLobby(options = {}) {
+    const { quiet = false } = options;
     const { roomCode, nickname } = getLobbyContext();
     if (!roomCode || !nickname) {
       stopLobbyPolling();
+      realtimeClient.disconnect(true);
+      patchState({ realtimeStatus: "idle" });
       return;
     }
 
@@ -184,19 +292,30 @@ export function setupRoomLobby() {
       lobbyNickname.textContent = nickname;
       lobbyCount.textContent = String(room.players?.length || 0);
       lobbyStatus.textContent = normalizeRoomStatus(room.status);
+      if (typeof room.deadline === "number") {
+        patchState({ gameDeadline: room.deadline });
+      }
 
-      if (room.players?.length >= MAX_PLAYERS) {
-        setFeedback(lobbyFeedback, "Sala cheia (30 jogadores).", "feedback-error");
-      } else {
+      if (!quiet) {
+        if (room.players?.length >= MAX_PLAYERS) {
+          setFeedback(lobbyFeedback, "Sala cheia (30 jogadores).", "feedback-error");
+        } else {
+          setFeedback(lobbyFeedback, "Conectado ao lobby.", "feedback-success");
+        }
+      } else if (!lobbyFeedback.textContent) {
         setFeedback(lobbyFeedback, "Conectado ao lobby.", "feedback-success");
       }
 
       if (room.status === "in_progress") {
         setFeedback(lobbyFeedback, "A partida começou.", "feedback-success");
         setView("voting");
+      } else if (room.status === "won" || room.status === "lost") {
+        renderGameOver(room.status);
       }
     } catch (error) {
       setFeedback(lobbyFeedback, error.message, "feedback-error");
+      patchState({ realtimeStatus: "reconnecting" });
+      startFallbackPolling();
     }
   }
 
@@ -227,9 +346,12 @@ export function setupRoomLobby() {
       setFeedback(playerFeedback, "Entrada confirmada.", "feedback-success");
       setView("player-lobby");
       await refreshPlayerLobby();
-      startLobbyPolling(refreshPlayerLobby);
+      startFallbackPolling();
+      realtimeClient.reconnectNow();
     } catch (error) {
       clearLobbyContext();
+      realtimeClient.disconnect(true);
+      patchState({ realtimeStatus: "idle" });
       setFeedback(playerFeedback, error.message, "feedback-error");
     } finally {
       playerSubmitButton.disabled = false;
@@ -255,6 +377,13 @@ export function setupRoomLobby() {
   if (cachedLobby.roomCode && cachedLobby.nickname) {
     setView("player-lobby");
     refreshPlayerLobby();
-    startLobbyPolling(refreshPlayerLobby);
+    startFallbackPolling();
+    realtimeClient.connect();
+  } else {
+    patchState({ realtimeStatus: "idle" });
   }
+
+  window.addEventListener("beforeunload", () => {
+    realtimeClient.disconnect(true);
+  });
 }

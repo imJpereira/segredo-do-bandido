@@ -5,6 +5,7 @@ const state = {
   apiBaseUrl: getApiBaseUrl(),
   connectionStatus: "checking",
   realtimeStatus: "idle",
+  gameDeadline: null,
 };
 
 const listeners = new Set();
