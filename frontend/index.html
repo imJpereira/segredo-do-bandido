@@ -4,16 +4,180 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Segredo do Bandido</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/tokens.css">
+  <link rel="stylesheet" href="./css/base.css">
+  <link rel="stylesheet" href="./css/components.css">
+  <link rel="stylesheet" href="./css/pages.css">
 </head>
 <body>
-  <h1>Segredo do Bandido</h1>
-  <p>API: <strong id="status">verificando...</strong></p>
-  <script>
-    const API_URL = "http://localhost:8000";
-    fetch(API_URL + "/health")
-      .then(r => r.json())
-      .then(d => document.getElementById("status").textContent = d.status)
-      .catch(() => document.getElementById("status").textContent = "fora do ar");
-  </script>
+  <div class="app-frame">
+    <header class="topbar card">
+      <div class="brand">
+        <p class="brand-kicker">Jogo cooperativo em tempo real</p>
+        <h1 class="brand-logo">
+          <span class="brand-top">SEGREDO DO</span>
+          <span class="brand-bottom">BANDIDO</span>
+        </h1>
+      </div>
+
+      <div class="topbar-actions">
+        <p id="connection-badge" class="badge badge-danger">● Verificando API</p>
+        <button id="toggle-settings" class="button button-ghost" type="button">Configurar API</button>
+      </div>
+    </header>
+
+    <section id="settings-panel" class="card settings-panel is-hidden" aria-label="Configuração de API">
+      <form id="api-config-form" class="stack-md">
+        <label class="field">
+          <span class="field-label">URL base da API</span>
+          <input id="api-base-url" class="input" name="apiBaseUrl" type="url" placeholder="http://localhost:8000" required>
+        </label>
+        <div class="cluster">
+          <button class="button button-primary" type="submit">Salvar</button>
+          <button id="reset-api-url" class="button button-ghost" type="button">Restaurar padrão</button>
+        </div>
+        <p id="api-config-feedback" class="feedback"></p>
+        <p class="hint">WebSocket esperado: <code id="ws-endpoint-label"></code></p>
+      </form>
+    </section>
+
+    <main class="layout">
+      <aside class="left-panel card stack-md">
+        <h2 class="panel-title">Painel de Estados</h2>
+        <p class="panel-text">Base da SPA para navegação da BAG-99.</p>
+
+        <nav class="view-nav" aria-label="Navegação entre telas">
+          <button class="button button-nav is-active" data-view-target="entry" type="button">Entrada</button>
+          <button class="button button-nav" data-view-target="admin-questions" type="button">Admin Perguntas</button>
+          <button class="button button-nav" data-view-target="admin-room" type="button">Abertura de Sala</button>
+          <button class="button button-nav" data-view-target="player-lobby" type="button">Lobby</button>
+          <button class="button button-nav" data-view-target="voting" type="button">Votação</button>
+          <button class="button button-nav" data-view-target="round-result" type="button">Resultado</button>
+          <button class="button button-nav" data-view-target="game-over" type="button">Fim de Jogo</button>
+        </nav>
+      </aside>
+
+      <section class="center-panel stack-lg">
+        <section class="view card" data-view="entry">
+          <p class="view-kicker">Entrada do Jogador</p>
+          <h2 class="view-title">Entre na operação</h2>
+          <p class="view-copy">Junte-se à sua turma e ajude a desarmar a bomba.</p>
+          <form class="stack-md">
+            <label class="field">
+              <span class="field-label">Código da sala</span>
+              <input class="input" type="text" placeholder="Ex.: B7F3Q" inputmode="text">
+            </label>
+            <label class="field">
+              <span class="field-label">Apelido</span>
+              <input class="input" type="text" placeholder="Seu apelido">
+            </label>
+            <button class="button button-primary" type="button">Entrar na sala</button>
+            <p class="hint">Caiu a internet? Você volta para o jogo automaticamente.</p>
+          </form>
+        </section>
+
+        <section class="view card is-hidden" data-view="admin-questions">
+          <p class="view-kicker">Administração</p>
+          <h2 class="view-title">Cadastro de Perguntas</h2>
+          <div class="admin-shell">
+            <nav class="admin-nav">
+              <button class="button button-nav is-active" type="button">Perguntas</button>
+              <button class="button button-nav" type="button" disabled>Salas</button>
+              <button class="button button-nav" type="button" disabled>Relatórios</button>
+            </nav>
+            <form class="stack-sm">
+              <label class="field">
+                <span class="field-label">Pergunta</span>
+                <input class="input" type="text" placeholder="Qual pista reforça a hipótese?">
+              </label>
+              <div class="option-grid">
+                <label class="field"><span class="field-label">Opção A</span><input class="input" type="text"></label>
+                <label class="field"><span class="field-label">Opção B</span><input class="input" type="text"></label>
+                <label class="field"><span class="field-label">Opção C</span><input class="input" type="text"></label>
+                <label class="field"><span class="field-label">Opção D</span><input class="input" type="text"></label>
+              </div>
+              <p class="badge badge-success">✓ Estrutura pronta para validação de 4 opções e 1 correta</p>
+            </form>
+          </div>
+        </section>
+
+        <section class="view card is-hidden" data-view="admin-room">
+          <p class="view-kicker">Administração</p>
+          <h2 class="view-title">Sala da Investigação</h2>
+          <div class="room-code">
+            <span class="room-code-value">BND742</span>
+            <button class="button button-secondary" type="button">Copiar</button>
+          </div>
+          <div class="status-grid">
+            <p class="status-item"><span>Jogadores conectados</span><strong>4 / 30</strong></p>
+            <p class="status-item"><span>Status</span><strong>Aguardando jogadores</strong></p>
+          </div>
+          <button class="button button-success" type="button">Iniciar Jogo</button>
+        </section>
+
+        <section class="view card is-hidden" data-view="player-lobby">
+          <p class="view-kicker">Lobby do Jogador</p>
+          <h2 class="view-title">Aguardando investigação</h2>
+          <p class="view-copy">Aguardando o administrador iniciar a investigação...</p>
+          <div class="status-grid">
+            <p class="status-item"><span>Código da sala</span><strong>B7F3Q</strong></p>
+            <p class="status-item"><span>Apelido</span><strong>Estudante 01</strong></p>
+            <p class="status-item"><span>Jogadores conectados</span><strong>8</strong></p>
+            <p class="status-item"><span>Status</span><strong>Lobby</strong></p>
+          </div>
+        </section>
+
+        <section class="view card is-hidden" data-view="voting">
+          <p class="view-kicker">Rodada 1 de 3</p>
+          <h2 class="view-title">Qual pista confirma o local?</h2>
+          <div class="vote-options stack-sm">
+            <button class="option option-a" type="button">A · A planta do galpão com marcações</button>
+            <button class="option option-b" type="button">B · O horário no bilhete</button>
+            <button class="option option-c option-eliminated" type="button" disabled>C · A placa do carro</button>
+            <button class="option option-d" type="button">D · A lista de contatos</button>
+          </div>
+          <p class="feedback feedback-success">✓ Voto registrado! Aguardando os demais jogadores...</p>
+          <div class="progress">
+            <div class="progress-bar" style="width: 67%;"></div>
+          </div>
+          <p class="hint">8 de 12 votaram</p>
+        </section>
+
+        <section class="view card is-hidden" data-view="round-result">
+          <p class="view-kicker">Resultado da Rodada 1</p>
+          <h2 class="view-title">Maioria da equipe votou em B</h2>
+          <div class="result-card result-card-danger">
+            <p class="result-main">Opção eliminada</p>
+            <p class="result-sub">Penalidade de tempo: -00:10</p>
+          </div>
+          <p class="view-copy">A bomba está mais próxima. Continuem atentos às pistas.</p>
+        </section>
+
+        <section class="view card is-hidden" data-view="game-over">
+          <p class="view-kicker">Tela Final</p>
+          <h2 class="view-title">✓ BOMBA DESARMADA!</h2>
+          <p class="view-copy">Parabéns, equipe! Vocês descobriram o segredo do bandido.</p>
+          <div class="cluster">
+            <button class="button button-success" type="button">Jogar Novamente</button>
+            <button class="button button-ghost" type="button">Sair da Sala</button>
+          </div>
+        </section>
+      </section>
+
+      <aside class="right-panel card stack-md">
+        <h2 class="panel-title">Timer / Bomba</h2>
+        <div class="timer timer-normal" aria-label="Tempo restante da rodada">00:30</div>
+        <p class="hint">Base preparada para sincronizar por deadline absoluto.</p>
+        <div class="progress">
+          <div class="progress-bar progress-violet" style="width: 25%;"></div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script type="module" src="./js/app.js"></script>
 </body>
 </html>
