@@ -39,6 +39,34 @@ function renderConnectionBadge(status) {
   badge.textContent = "● API indisponível";
 }
 
+function renderRealtimeBadge(status) {
+  const badge = document.getElementById("realtime-badge");
+  if (!badge) {
+    return;
+  }
+
+  badge.classList.remove("is-hidden", "badge-warning", "badge-success", "badge-danger");
+  if (status === "connected") {
+    badge.classList.add("badge-success");
+    badge.textContent = "● Tempo real ativo";
+    return;
+  }
+
+  if (status === "reconnecting") {
+    badge.classList.add("badge-warning");
+    badge.textContent = "Reconectando...";
+    return;
+  }
+
+  if (status === "failed") {
+    badge.classList.add("badge-danger");
+    badge.textContent = "Tempo real indisponível";
+    return;
+  }
+
+  badge.classList.add("is-hidden");
+}
+
 function bindSettingsControls() {
   const panel = document.getElementById("settings-panel");
   const toggleButton = document.getElementById("toggle-settings");
@@ -98,6 +126,7 @@ function bootstrap() {
   subscribe((state) => {
     renderView(state.currentView);
     renderConnectionBadge(state.connectionStatus);
+    renderRealtimeBadge(state.realtimeStatus);
   });
   startHealthPolling();
 }

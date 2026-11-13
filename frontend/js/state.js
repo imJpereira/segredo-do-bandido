@@ -4,6 +4,7 @@ const state = {
   currentView: "entry",
   apiBaseUrl: getApiBaseUrl(),
   connectionStatus: "checking",
+  realtimeStatus: "idle",
 };
 
 const listeners = new Set();
