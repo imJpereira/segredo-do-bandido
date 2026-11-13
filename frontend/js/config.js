@@ -7,7 +7,9 @@ function normalizeUrl(value) {
 }
 
 function defaultApiBaseUrl() {
-  return "http://localhost:8000";
+  const host = window.location.hostname || "localhost";
+  const protocol = window.location.protocol === "https:" ? "https:" : "http:";
+  return `${protocol}//${host}:8000`;
 }
 
 export function getApiBaseUrl() {

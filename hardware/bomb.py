@@ -1,3 +1,4 @@
+import os
 import threading
 import time
 
@@ -9,15 +10,23 @@ BUZZER_PIN = 24
 
 
 class Bomb:
-    def __init__(self) -> None:
+    def __init__(self, mute: bool | None = None) -> None:
+        if mute is None:
+            mute = os.getenv("MUTE_BUZZER", "").strip().lower() in {"1", "true", "yes"}
+        self._mute = mute
         self._green_leds = [LED(pin) for pin in GREEN_PINS]
         self._red_led = LED(RED_PIN)
         self._buzzer = Buzzer(BUZZER_PIN)
         self._lock = threading.Lock()
+        self._condition = threading.Condition()
         self._stop_event = threading.Event()
         self._thread: threading.Thread | None = None
         self._deadline: float | None = None
         self.reset()
+
+    def _buzzer_on(self) -> None:
+        if not self._mute:
+            self._buzzer.on()
 
     def __enter__(self) -> "Bomb":
         return self
@@ -26,7 +35,9 @@ class Bomb:
         self.close()
 
     def _stop_ticker(self) -> None:
-        self._stop_event.set()
+        with self._condition:
+            self._stop_event.set()
+            self._condition.notify_all()
         if self._thread is not None and self._thread.is_alive():
             self._thread.join(timeout=2.0)
         self._thread = None
@@ -50,15 +61,17 @@ class Bomb:
                 if self._stop_event.is_set():
                     break
                 self._red_led.on()
-                self._buzzer.on()
+                self._buzzer_on()
             if self._stop_event.wait(0.06):
                 break
             with self._lock:
                 self._red_led.off()
                 self._buzzer.off()
             wait_time = max(0.05, interval - 0.06)
-            if self._stop_event.wait(wait_time):
-                break
+            with self._condition:
+                if self._stop_event.is_set():
+                    break
+                self._condition.wait(timeout=wait_time)
 
     def reset(self) -> None:
         self._stop_ticker()
@@ -77,7 +90,9 @@ class Bomb:
         self._thread.start()
 
     def set_deadline(self, deadline: float) -> None:
-        self._deadline = deadline
+        with self._condition:
+            self._deadline = deadline
+            self._condition.notify_all()
 
     def hit(self, count: int) -> None:
         lit = max(0, min(count, len(self._green_leds)))
@@ -87,13 +102,13 @@ class Bomb:
                     led.on()
                 else:
                     led.off()
-            self._buzzer.on()
+            self._buzzer_on()
             time.sleep(0.12)
             self._buzzer.off()
 
     def penalty(self) -> None:
         with self._lock:
-            self._buzzer.on()
+            self._buzzer_on()
             for _ in range(4):
                 self._red_led.on()
                 time.sleep(0.12)
@@ -109,7 +124,7 @@ class Bomb:
             for _ in range(3):
                 for led in self._green_leds:
                     led.on()
-                self._buzzer.on()
+                self._buzzer_on()
                 time.sleep(0.15)
                 for led in self._green_leds:
                     led.off()
@@ -124,7 +139,7 @@ class Bomb:
             for led in self._green_leds:
                 led.off()
             self._red_led.on()
-            self._buzzer.on()
+            self._buzzer_on()
             time.sleep(2.0)
             self._buzzer.off()
 

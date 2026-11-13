@@ -1,4 +1,5 @@
 import { createRoom, getRoom, startRoom, submitVote } from "./api.js";
+import { renderQR } from "./qr.js";
 import { getItem, removeItem, setItem } from "./storage.js";
 import { setView } from "./router.js";
 import { getState, patchState } from "./state.js";
@@ -88,6 +89,7 @@ export function setupRoomLobby() {
   const adminFeedback = document.getElementById("admin-room-feedback");
   const adminRoomCode = document.getElementById("admin-room-code");
   const adminRoomAddress = document.getElementById("admin-room-address");
+  const adminRoomQr = document.getElementById("admin-room-qr");
   const adminPlayers = document.getElementById("admin-room-players");
   const adminStatus = document.getElementById("admin-room-status");
   const adminOpenButton = document.getElementById("admin-open-room");
@@ -683,12 +685,25 @@ export function setupRoomLobby() {
     },
   });
 
+  function renderAdminAccess(roomCode = "") {
+    if (adminRoomAddress) {
+      adminRoomAddress.textContent = roomCode
+        ? `Acesso: ${window.location.origin} (código ${roomCode})`
+        : `Acesso: ${window.location.origin}`;
+    }
+    if (adminRoomQr) {
+      try {
+        renderQR(adminRoomQr, window.location.origin, 180);
+      } catch (_error) {
+        adminRoomQr.textContent = "";
+      }
+    }
+  }
+
   function renderAdminRoom(room) {
     currentAdminRoomCode = room.code || "";
     adminRoomCode.textContent = room.code || "----";
-    adminRoomAddress.textContent = room.code
-      ? `Acesso: ${window.location.origin} (código ${room.code})`
-      : "";
+    renderAdminAccess(room.code || "");
     adminPlayers.textContent = String(room.players?.length || 0);
     adminStatus.textContent = normalizeRoomStatus(room.status);
     adminStartButton.disabled = room.status !== "lobby";
@@ -866,6 +881,7 @@ export function setupRoomLobby() {
   copyButton?.addEventListener("click", copyRoomCode);
   playerEntryForm?.addEventListener("submit", handlePlayerEntry);
   gameOverFinishButton?.addEventListener("click", handleFinalizeGame);
+  renderAdminAccess();
   renderVoting();
 
   const cachedLobby = getLobbyContext();
