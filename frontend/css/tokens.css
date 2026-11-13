@@ -1,0 +1,28 @@
+:root {
+  --color-bg: #080b0d;
+  --color-surface: #1a1a1f;
+  --color-surface-soft: #202028;
+  --color-red-dark: #880e18;
+  --color-red: #d72638;
+  --color-warning: #ff8c00;
+  --color-accent: #784dff;
+  --color-success: #2ecc71;
+  --color-text: #e5e7eb;
+  --color-muted: #9ba3af;
+  --color-border: rgba(229, 231, 235, 0.18);
+  --color-danger-soft: rgba(215, 38, 56, 0.2);
+  --color-success-soft: rgba(46, 204, 113, 0.2);
+  --shadow-card: 0 12px 30px rgba(0, 0, 0, 0.45);
+  --radius-sm: 0.5rem;
+  --radius-md: 0.85rem;
+  --radius-lg: 1.15rem;
+  --space-2xs: 0.3rem;
+  --space-xs: 0.55rem;
+  --space-sm: 0.8rem;
+  --space-md: 1rem;
+  --space-lg: 1.35rem;
+  --space-xl: 1.8rem;
+  --space-2xl: 2.4rem;
+  --font-ui: "Inter", "Segoe UI", sans-serif;
+  --font-brand: "Chakra Petch", "Inter", sans-serif;
+}

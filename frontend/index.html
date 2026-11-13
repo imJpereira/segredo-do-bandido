@@ -4,16 +4,225 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Segredo do Bandido</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/tokens.css">
+  <link rel="stylesheet" href="./css/base.css">
+  <link rel="stylesheet" href="./css/components.css">
+  <link rel="stylesheet" href="./css/pages.css">
 </head>
 <body>
-  <h1>Segredo do Bandido</h1>
-  <p>API: <strong id="status">verificando...</strong></p>
-  <script>
-    const API_URL = "http://localhost:8000";
-    fetch(API_URL + "/health")
-      .then(r => r.json())
-      .then(d => document.getElementById("status").textContent = d.status)
-      .catch(() => document.getElementById("status").textContent = "fora do ar");
-  </script>
+  <div class="app-frame">
+    <header class="topbar card">
+      <div class="brand">
+        <p class="brand-kicker">Jogo cooperativo em tempo real</p>
+        <h1 class="brand-logo">
+          <span class="brand-top">SEGREDO DO</span>
+          <span class="brand-bottom">BANDIDO</span>
+        </h1>
+      </div>
+
+      <div class="topbar-actions">
+        <p id="connection-badge" class="badge badge-warning">● Conectando...</p>
+        <p id="realtime-badge" class="badge badge-warning is-hidden">Reconectando...</p>
+        <button id="toggle-settings" class="button button-ghost is-hidden" type="button" aria-label="Abrir ajustes técnicos">Ajustes técnicos</button>
+      </div>
+    </header>
+
+    <section id="settings-panel" class="card settings-panel is-hidden" aria-label="Configuração avançada">
+      <form id="api-config-form" class="stack-md">
+        <label class="field">
+          <span class="field-label">Servidor da partida</span>
+          <input id="api-base-url" class="input" name="apiBaseUrl" type="url" placeholder="http://localhost:8000" required>
+        </label>
+        <div class="cluster">
+          <button class="button button-primary" type="submit">Salvar</button>
+          <button id="reset-api-url" class="button button-ghost" type="button">Restaurar padrão</button>
+        </div>
+        <p id="api-config-feedback" class="feedback"></p>
+        <p class="hint">Canal em tempo real: <code id="ws-endpoint-label"></code></p>
+        <p class="hint">Uso técnico de laboratório.</p>
+      </form>
+    </section>
+
+    <main class="layout">
+      <aside class="left-panel card stack-md">
+        <h2 class="panel-title">Menu do Jogo</h2>
+        <p class="panel-text">Acesso rapido para administracao da partida.</p>
+
+        <nav class="view-nav" aria-label="Navegação entre telas">
+          <button class="button button-nav is-active" data-view-target="entry" type="button">Entrada</button>
+          <button class="button button-nav" data-view-target="admin-questions" type="button">Perguntas</button>
+          <button class="button button-nav" data-view-target="admin-room" type="button">Sala</button>
+        </nav>
+      </aside>
+
+      <section class="center-panel stack-lg">
+        <section class="view card" data-view="entry">
+          <p class="view-kicker">Entrada do Jogador</p>
+          <h2 class="view-title">Entre na operação</h2>
+          <p class="view-copy">Junte-se à sua turma e ajude a desarmar a bomba.</p>
+          <form id="player-entry-form" class="stack-md">
+            <label class="field">
+              <span class="field-label">Código da sala</span>
+              <input id="player-room-code" class="input" type="text" placeholder="Ex.: 1234" inputmode="text" required>
+            </label>
+            <label class="field">
+              <span class="field-label">Apelido</span>
+              <input id="player-nickname" class="input" type="text" placeholder="Seu apelido" required>
+            </label>
+            <p id="player-entry-feedback" class="feedback"></p>
+            <button id="player-entry-submit" class="button button-primary" type="submit">Entrar na sala</button>
+            <p class="hint">Caiu a internet? Você volta para o jogo automaticamente.</p>
+          </form>
+        </section>
+
+        <section class="view card is-hidden" data-view="admin-questions">
+          <p class="view-kicker">Administração</p>
+          <h2 class="view-title">Cadastro de Perguntas</h2>
+          <div class="admin-shell">
+            <nav class="admin-nav">
+              <button class="button button-nav is-active" data-view-target="admin-questions" type="button">Perguntas</button>
+              <button class="button button-nav" data-view-target="admin-room" type="button">Sala</button>
+            </nav>
+            <form id="question-form" class="stack-sm">
+              <label class="field">
+                <span class="field-label">Senha de administração</span>
+                <input id="admin-password" class="input" type="password" autocomplete="current-password" required>
+              </label>
+              <label class="field">
+                <span class="field-label">Pergunta</span>
+                <input id="question-text" class="input" type="text" placeholder="Qual pista reforça a hipótese?" required>
+              </label>
+              <div class="option-grid">
+                <label class="field">
+                  <span class="field-label">Opção A</span>
+                  <input id="option-a" class="input" type="text" required>
+                  <span class="radio-inline"><input type="radio" name="correct-option" value="0"> Correta</span>
+                </label>
+                <label class="field">
+                  <span class="field-label">Opção B</span>
+                  <input id="option-b" class="input" type="text" required>
+                  <span class="radio-inline"><input type="radio" name="correct-option" value="1"> Correta</span>
+                </label>
+                <label class="field">
+                  <span class="field-label">Opção C</span>
+                  <input id="option-c" class="input" type="text" required>
+                  <span class="radio-inline"><input type="radio" name="correct-option" value="2"> Correta</span>
+                </label>
+                <label class="field">
+                  <span class="field-label">Opção D</span>
+                  <input id="option-d" class="input" type="text" required>
+                  <span class="radio-inline"><input type="radio" name="correct-option" value="3"> Correta</span>
+                </label>
+              </div>
+              <p id="question-validation-feedback" class="feedback"></p>
+              <p id="question-api-feedback" class="feedback"></p>
+              <div class="cluster">
+                <button id="question-cancel" class="button button-ghost" type="button">Cancelar</button>
+                <button id="question-submit" class="button button-primary" type="submit">Salvar Pergunta</button>
+              </div>
+            </form>
+            <section class="questions-panel stack-sm">
+              <div class="questions-panel-head">
+                <h3 class="panel-title">Perguntas cadastradas</h3>
+                <button id="questions-refresh" class="button button-ghost" type="button">Atualizar</button>
+              </div>
+              <p id="questions-list-feedback" class="feedback"></p>
+              <div id="questions-list" class="questions-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view card is-hidden" data-view="admin-room">
+          <p class="view-kicker">Administração</p>
+          <h2 class="view-title">Sala da Investigação</h2>
+          <form id="admin-room-form" class="stack-sm">
+            <label class="field">
+              <span class="field-label">Senha de administração</span>
+              <input id="admin-room-password" class="input" type="password" autocomplete="current-password" required>
+            </label>
+            <div class="cluster">
+              <button id="admin-open-room" class="button button-primary" type="submit">Abrir Sala</button>
+            </div>
+            <p id="admin-room-feedback" class="feedback"></p>
+          </form>
+          <div class="room-code">
+            <span id="admin-room-code" class="room-code-value">----</span>
+            <button id="admin-copy-room-code" class="button button-secondary" type="button" disabled>Copiar</button>
+          </div>
+          <p id="admin-room-address" class="hint"></p>
+          <div class="status-grid">
+            <p class="status-item"><span>Jogadores conectados</span><strong id="admin-room-players">0</strong></p>
+            <p class="status-item"><span>Status</span><strong id="admin-room-status">Aguardando jogadores</strong></p>
+          </div>
+          <button id="admin-start-room" class="button button-success" type="button" disabled>Iniciar Jogo</button>
+        </section>
+
+        <section class="view card is-hidden" data-view="player-lobby">
+          <p class="view-kicker">Lobby do Jogador</p>
+          <h2 class="view-title">Aguardando investigação</h2>
+          <p class="view-copy">Aguardando o administrador iniciar a investigação...</p>
+          <div class="status-grid">
+            <p class="status-item"><span>Código da sala</span><strong id="lobby-room-code">----</strong></p>
+            <p class="status-item"><span>Apelido</span><strong id="lobby-player-nickname">----</strong></p>
+            <p class="status-item"><span>Jogadores conectados</span><strong id="lobby-player-count">0</strong></p>
+            <p class="status-item"><span>Status</span><strong id="lobby-room-status">Lobby</strong></p>
+          </div>
+          <p id="lobby-feedback" class="feedback"></p>
+        </section>
+
+        <section class="view card is-hidden" data-view="voting">
+          <p id="voting-round-label" class="view-kicker">Rodada -- de 3</p>
+          <h2 id="voting-question-text" class="view-title">Aguardando pergunta...</h2>
+          <div id="voting-options" class="vote-options stack-sm">
+            <button class="option option-a" type="button" disabled>A · Aguardando opção</button>
+          </div>
+          <p id="voting-feedback" class="feedback"></p>
+          <div class="progress">
+            <div id="voting-progress-bar" class="progress-bar" style="width: 0%;"></div>
+          </div>
+          <p id="voting-progress-label" class="hint">0 de 0 votaram</p>
+        </section>
+
+        <section class="view card is-hidden" data-view="round-result">
+          <p id="round-result-kicker" class="view-kicker">Resultado da Rodada --</p>
+          <h2 id="round-result-title" class="view-title">Aguardando resultado da equipe...</h2>
+          <div id="round-result-card" class="result-card">
+            <p id="round-result-status" class="result-main"></p>
+            <p id="round-result-penalty" class="result-sub"></p>
+          </div>
+          <div class="status-grid">
+            <p class="status-item"><span>Alternativa vencedora</span><strong id="round-result-winning-option">--</strong></p>
+            <p class="status-item"><span>Votos</span><strong id="round-result-votes">--</strong></p>
+            <p class="status-item"><span>Percentual</span><strong id="round-result-percent">--</strong></p>
+          </div>
+          <p id="round-result-copy" class="view-copy">Aguardando atualização da próxima etapa...</p>
+        </section>
+
+        <section class="view card is-hidden" data-view="game-over">
+          <p id="game-over-kicker" class="view-kicker">Tela Final</p>
+          <h2 id="game-over-title" class="view-title">✓ BOMBA DESARMADA!</h2>
+          <p id="game-over-copy" class="view-copy">Parabéns, equipe! Vocês descobriram o segredo do bandido.</p>
+          <p id="game-over-reason" class="feedback"></p>
+          <div class="cluster">
+            <button id="game-over-finish" class="button button-ghost" type="button">Finalizar</button>
+          </div>
+        </section>
+      </section>
+
+      <aside class="right-panel card stack-md">
+        <h2 class="panel-title">Timer / Bomba</h2>
+        <div id="game-timer" class="timer timer-normal" aria-label="Tempo restante da rodada">00:00</div>
+        <p class="hint">Relogio oficial da investigacao.</p>
+        <div class="progress">
+          <div class="progress-bar progress-violet" style="width: 25%;"></div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script type="module" src="./js/app.js"></script>
 </body>
 </html>

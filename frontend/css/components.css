@@ -1,0 +1,212 @@
+.card {
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(5px);
+}
+
+.button {
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 0.68rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+
+.button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.button-primary {
+  background: linear-gradient(145deg, #df2f43, #a81425);
+  border-color: rgba(255, 140, 140, 0.25);
+}
+
+.button-secondary {
+  background: linear-gradient(145deg, #7b4eff, #5d39cb);
+}
+
+.button-success {
+  background: linear-gradient(145deg, #2ecc71, #199d53);
+}
+
+.button-danger {
+  background: linear-gradient(145deg, #d72638, #830f1d);
+}
+
+.button-ghost {
+  background: rgba(229, 231, 235, 0.04);
+  border-color: rgba(229, 231, 235, 0.22);
+}
+
+.button-nav {
+  width: 100%;
+  text-align: left;
+  background: rgba(229, 231, 235, 0.03);
+  border-color: rgba(229, 231, 235, 0.12);
+}
+
+.button-nav.is-active {
+  background: rgba(215, 38, 56, 0.28);
+  border-color: rgba(255, 140, 140, 0.35);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.62rem;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  border: 1px solid transparent;
+}
+
+.badge-danger {
+  background: var(--color-danger-soft);
+  border-color: rgba(215, 38, 56, 0.45);
+}
+
+.badge-success {
+  background: var(--color-success-soft);
+  border-color: rgba(46, 204, 113, 0.45);
+}
+
+.badge-warning {
+  background: rgba(255, 140, 0, 0.14);
+  border-color: rgba(255, 140, 0, 0.38);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.field-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.input {
+  width: 100%;
+  border: 1px solid rgba(229, 231, 235, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 0.85rem;
+  background: rgba(9, 10, 13, 0.9);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.input:focus {
+  outline: none;
+  border-color: rgba(120, 77, 255, 0.8);
+  box-shadow: 0 0 0 3px rgba(120, 77, 255, 0.18);
+}
+
+.feedback {
+  font-size: 0.9rem;
+  min-height: 1.25rem;
+  margin: 0;
+}
+
+.feedback-success {
+  color: var(--color-success);
+}
+
+.feedback-error {
+  color: #ff97a1;
+}
+
+.hint {
+  color: var(--color-muted);
+  font-size: 0.88rem;
+  margin: 0;
+}
+
+.progress {
+  width: 100%;
+  height: 0.6rem;
+  border-radius: 999px;
+  background: rgba(229, 231, 235, 0.12);
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2ecc71, #6de89d);
+}
+
+.progress-violet {
+  background: linear-gradient(90deg, #784dff, #a381ff);
+}
+
+.timer {
+  font-family: var(--font-brand);
+  text-align: center;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  background: #0c0d12;
+  border: 1px solid rgba(215, 38, 56, 0.45);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.8rem;
+}
+
+.timer-normal {
+  color: #ff6f78;
+  box-shadow: inset 0 0 18px rgba(215, 38, 56, 0.15);
+}
+
+.option {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(229, 231, 235, 0.2);
+  background: rgba(23, 24, 32, 0.82);
+  padding: 0.78rem 0.88rem;
+}
+
+.option-a {
+  border-color: rgba(215, 38, 56, 0.5);
+}
+
+.option-b {
+  border-color: rgba(120, 77, 255, 0.5);
+}
+
+.option-c {
+  border-color: rgba(229, 231, 235, 0.3);
+}
+
+.option-d {
+  border-color: rgba(255, 140, 0, 0.55);
+}
+
+.option-eliminated {
+  text-decoration: line-through;
+  opacity: 0.55;
+  position: relative;
+}
+
+.option-eliminated::after {
+  content: "✕";
+  position: absolute;
+  right: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-red);
+}

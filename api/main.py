@@ -3,7 +3,7 @@ import os
 import secrets
 import sqlite3
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -11,7 +11,9 @@ import api.config
 from api import events
 from api.db import get_connection, init_db
 from api.engine import game, players, votes as votes_engine
+from api.room_state import RoomSnapshotNotFound, get_room_snapshot
 from api.routers import votes
+from api import ws_hub
 
 
 @asynccontextmanager
@@ -210,47 +212,53 @@ async def start_room(code: str):
 
 @app.get("/rooms/{code}")
 def get_room(code: str):
-    with get_connection() as conn:
-        room = conn.execute(
-            "SELECT id, code, status, deadline, current_round, current_attempt FROM sessions WHERE code = ?",
-            (code,),
-        ).fetchone()
-        if not room:
-            raise HTTPException(status_code=404, detail="Sala não encontrada.")
+    try:
+        return get_room_snapshot(code)
+    except RoomSnapshotNotFound as error:
+        raise HTTPException(status_code=404, detail=str(error))
 
-        question = None
-        q_row = conn.execute(
-            """
-            SELECT q.id, q.text
-            FROM session_questions sq
-            JOIN questions q ON q.id = sq.question_id
-            WHERE sq.session_id = ? AND sq.question_order = ?
-            """,
-            (room["id"], room["current_round"]),
-        ).fetchone()
-        if q_row:
-            opts = conn.execute(
-                "SELECT id, text FROM options WHERE question_id = ? ORDER BY id",
-                (q_row["id"],),
-            ).fetchall()
-            eliminated = conn.execute(
-                "SELECT option_id FROM eliminated_options WHERE session_id = ? AND round = ? ORDER BY option_id",
-                (room["id"], room["current_round"]),
-            ).fetchall()
-            question = {
-                "id": q_row["id"],
-                "text": q_row["text"],
-                "options": [{"id": o["id"], "text": o["text"]} for o in opts],
-                "eliminated_options": [e["option_id"] for e in eliminated],
-            }
 
-    return {
-        "code": room["code"],
-        "status": room["status"],
-        "current_round": room["current_round"],
-        "current_attempt": room["current_attempt"],
-        "deadline": room["deadline"],
-        "players": players.connected_players(code),
-        "question": question,
-    }
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    joined = False
+    try:
+        while True:
+            payload = await websocket.receive_json()
+            event_type = payload.get("type")
+            if event_type != "join_lobby":
+                await ws_hub.send_error(websocket, "Evento websocket não suportado.")
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                return
+
+            raw_data = payload.get("data")
+            data = raw_data if isinstance(raw_data, dict) else payload
+
+            room = str(data.get("room", "")).strip().upper()
+            player_id = str(data.get("player_id", "")).strip()
+            nickname = str(data.get("nickname", "")).strip()
+            if not room or not player_id or not nickname:
+                await ws_hub.send_error(websocket, "Payload de join_lobby inválido.")
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                return
+
+            try:
+                await players.join_room(room, player_id, nickname)
+            except (players.RoomNotFound, players.JoinRejected) as error:
+                await ws_hub.send_error(websocket, str(error))
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                return
+
+            await ws_hub.register_connection(room, player_id, websocket)
+            snapshot = get_room_snapshot(room)
+            await ws_hub.send_snapshot(websocket, snapshot)
+            joined = True
+            break
+
+        while joined:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        pass
+    finally:
+        await ws_hub.unregister_connection(websocket)
 

@@ -1,0 +1,78 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-ui);
+  color: var(--color-text);
+  background:
+    radial-gradient(circle at 15% 10%, rgba(215, 38, 56, 0.2), transparent 40%),
+    radial-gradient(circle at 85% 20%, rgba(120, 77, 255, 0.14), transparent 35%),
+    linear-gradient(160deg, #060709 0%, #0a0e12 45%, #11131a 100%);
+  line-height: 1.5;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(229, 231, 235, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(229, 231, 235, 0.012) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.35;
+}
+
+.app-frame {
+  width: min(1200px, 100% - 1.25rem);
+  margin: 1rem auto 2rem;
+  position: relative;
+  z-index: 1;
+}
+
+.layout {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.stack-sm > * + * {
+  margin-top: var(--space-sm);
+}
+
+.stack-md > * + * {
+  margin-top: var(--space-md);
+}
+
+.stack-lg > * + * {
+  margin-top: var(--space-lg);
+}
+
+.cluster {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+@media (min-width: 960px) {
+  .app-frame {
+    margin-top: 1.2rem;
+  }
+
+  .layout {
+    grid-template-columns: minmax(220px, 260px) minmax(0, 1fr) minmax(220px, 280px);
+    align-items: start;
+  }
+}
