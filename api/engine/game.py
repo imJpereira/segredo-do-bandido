@@ -59,8 +59,9 @@ async def start_game(room: str) -> dict:
         "round": 1,
         "options": [{"id": o["id"], "text": o["text"]} for o in options],
     }
-    await events.publish("game_started", {"room": room, "deadline": deadline})
+    now = time.time()
+    await events.publish("game_started", {"room": room, "deadline": deadline, "server_now": now})
     await events.publish("question", {"room": room, **question})
     start_round_timer(room)
     start_deadline_watcher(room)
-    return {"code": room, "status": "in_progress", "deadline": deadline}
+    return {"code": room, "status": "in_progress", "deadline": deadline, "server_now": now}

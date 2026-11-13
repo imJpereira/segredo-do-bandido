@@ -274,7 +274,7 @@ async def advance_game(room: str, winner: int, correct: bool) -> None:
     if not correct:
         await events.publish(
             "time_penalty",
-            {"room": room, "seconds": TIME_PENALTY_SECONDS, "deadline": deadline},
+            {"room": room, "seconds": TIME_PENALTY_SECONDS, "deadline": deadline, "server_now": time.time()},
         )
     if deadline <= time.time():
         await end_game(room, "lost", "time_expired")

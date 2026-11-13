@@ -6,6 +6,9 @@ import { setupRoomLobby } from "./room-lobby.js";
 import { patchState, subscribe } from "./state.js";
 import { buildWsUrl } from "./websocket.js";
 
+let latestState = null;
+let countdownTickerId = null;
+
 function renderView(view) {
   document.querySelectorAll(".view").forEach((node) => {
     node.classList.toggle("is-hidden", node.dataset.view !== view);
@@ -118,16 +121,59 @@ function startHealthPolling() {
   window.setInterval(triggerHealthCheck, 15000);
 }
 
+function formatTimer(remainingMs) {
+  const totalSeconds = Math.max(0, Math.floor(remainingMs / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function estimateRemainingMs(state) {
+  if (!state || typeof state.gameDeadline !== "number") {
+    return null;
+  }
+  const deadlineMs = state.gameDeadline * 1000;
+  const nowMs = Date.now();
+  let estimatedServerNowMs = nowMs;
+  if (typeof state.serverNow === "number" && typeof state.serverNowCapturedAtMs === "number") {
+    const elapsedSinceReferenceMs = nowMs - state.serverNowCapturedAtMs;
+    estimatedServerNowMs = (state.serverNow * 1000) + elapsedSinceReferenceMs;
+  }
+  return Math.max(0, deadlineMs - estimatedServerNowMs);
+}
+
+function renderTimer(state) {
+  const node = document.getElementById("game-timer");
+  if (!node) {
+    return;
+  }
+  const remainingMs = estimateRemainingMs(state);
+  node.textContent = remainingMs === null ? "00:00" : formatTimer(remainingMs);
+}
+
+function startCountdownTicker() {
+  if (countdownTickerId) {
+    window.clearInterval(countdownTickerId);
+  }
+  renderTimer(latestState);
+  countdownTickerId = window.setInterval(() => {
+    renderTimer(latestState);
+  }, 1000);
+}
+
 function bootstrap() {
   bindViewButtons();
   bindSettingsControls();
   setupAdminQuestions();
   setupRoomLobby();
   subscribe((state) => {
+    latestState = state;
     renderView(state.currentView);
     renderConnectionBadge(state.connectionStatus);
     renderRealtimeBadge(state.realtimeStatus);
+    renderTimer(state);
   });
+  startCountdownTicker();
   startHealthPolling();
 }
 

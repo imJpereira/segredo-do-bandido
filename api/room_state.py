@@ -1,4 +1,5 @@
 from contextlib import closing
+import time
 
 from api.db import get_connection
 from api.engine import players
@@ -49,6 +50,7 @@ def get_room_snapshot(code: str) -> dict:
         "current_round": room["current_round"],
         "current_attempt": room["current_attempt"],
         "deadline": room["deadline"],
+        "server_now": time.time(),
         "players": players.connected_players(code),
         "question": question,
     }

@@ -144,9 +144,10 @@ export function setupRoomLobby() {
     lobbyCount.textContent = String(connected.length);
     lobbyStatus.textContent = normalizeRoomStatus(snapshot.status);
 
-    if (typeof snapshot.deadline === "number") {
-      patchState({ gameDeadline: snapshot.deadline });
-    }
+    patchState({
+      gameDeadline: typeof snapshot.deadline === "number" ? snapshot.deadline : null,
+      serverNow: typeof snapshot.server_now === "number" ? snapshot.server_now : null,
+    });
 
     if (snapshot.status === "in_progress") {
       setView("voting");
@@ -186,14 +187,20 @@ export function setupRoomLobby() {
     },
     onGameStarted: (payload) => {
       if (typeof payload.deadline === "number") {
-        patchState({ gameDeadline: payload.deadline });
+        patchState({
+          gameDeadline: payload.deadline,
+          serverNow: typeof payload.server_now === "number" ? payload.server_now : null,
+        });
       }
       setFeedback(lobbyFeedback, "A partida começou.", "feedback-success");
       setView("voting");
     },
     onTimePenalty: (payload) => {
       if (typeof payload.deadline === "number") {
-        patchState({ gameDeadline: payload.deadline });
+        patchState({
+          gameDeadline: payload.deadline,
+          serverNow: typeof payload.server_now === "number" ? payload.server_now : null,
+        });
       }
     },
     onGameWon: () => {
@@ -292,9 +299,10 @@ export function setupRoomLobby() {
       lobbyNickname.textContent = nickname;
       lobbyCount.textContent = String(room.players?.length || 0);
       lobbyStatus.textContent = normalizeRoomStatus(room.status);
-      if (typeof room.deadline === "number") {
-        patchState({ gameDeadline: room.deadline });
-      }
+      patchState({
+        gameDeadline: typeof room.deadline === "number" ? room.deadline : null,
+        serverNow: typeof room.server_now === "number" ? room.server_now : null,
+      });
 
       if (!quiet) {
         if (room.players?.length >= MAX_PLAYERS) {

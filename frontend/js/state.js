@@ -6,6 +6,8 @@ const state = {
   connectionStatus: "checking",
   realtimeStatus: "idle",
   gameDeadline: null,
+  serverNow: null,
+  serverNowCapturedAtMs: null,
 };
 
 const listeners = new Set();
@@ -21,6 +23,11 @@ export function getState() {
 }
 
 export function patchState(partialState) {
-  Object.assign(state, partialState);
+  const nextState = { ...partialState };
+  if (Object.prototype.hasOwnProperty.call(nextState, "serverNow")) {
+    nextState.serverNowCapturedAtMs =
+      typeof nextState.serverNow === "number" ? Date.now() : null;
+  }
+  Object.assign(state, nextState);
   listeners.forEach((listener) => listener(state));
 }
